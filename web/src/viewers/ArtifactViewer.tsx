@@ -44,7 +44,7 @@ function Mermaid({ code }: { code: string }) {
   return <div ref={ref} />
 }
 
-function MarkdownView({ content }: { content: string }) {
+export function MarkdownView({ content }: { content: string }) {
   return (
     <div style={{ maxWidth: 900, lineHeight: 1.7 }}>
       <ReactMarkdown

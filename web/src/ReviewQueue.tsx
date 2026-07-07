@@ -1,16 +1,50 @@
-import { Alert, Button, Drawer, Empty, Input, List, Modal, Space, Tag, Typography, message } from "antd"
+import { Alert, Button, Drawer, Empty, Input, List, Modal, Segmented, Space, Tag, Typography, message } from "antd"
 import { useCallback, useEffect, useState } from "react"
 import { api, type Artifact } from "./api"
+import { MarkdownView } from "./viewers/ArtifactViewer"
 
-function DiffView({ id }: { id: number }) {
+function DiffView({ id, path }: { id: number; path: string }) {
   const [diff, setDiff] = useState<{ approved: string | null; current: string | null } | null>(null)
+  const isMd = path.endsWith(".md")
+  const [mode, setMode] = useState<"preview" | "diff">("diff")
   useEffect(() => {
-    api.diff(id).then(setDiff)
-  }, [id])
+    setDiff(null)
+    api.diff(id).then(d => {
+      setDiff(d)
+      // md 首次送审默认渲染预览(重点是看内容);复审默认文本对比(重点是看变更)
+      setMode(isMd && d.approved === null ? "preview" : "diff")
+    })
+  }, [id, isMd])
   if (!diff) return null
+
+  const toggle = isMd ? (
+    <Segmented
+      size="small"
+      style={{ marginBottom: 8 }}
+      options={[
+        { label: "渲染预览", value: "preview" },
+        { label: "文本对比", value: "diff" }
+      ]}
+      value={mode}
+      onChange={v => setMode(v as "preview" | "diff")}
+    />
+  ) : null
+
+  if (isMd && mode === "preview") {
+    return (
+      <div>
+        {toggle}
+        <div style={{ maxHeight: "62vh", overflow: "auto", border: "1px solid #f0f0f0", borderRadius: 4, padding: "8px 16px" }}>
+          <MarkdownView content={diff.current ?? "(空)"} />
+        </div>
+      </div>
+    )
+  }
+
   if (diff.approved === null) {
     return (
       <div>
+        {toggle}
         <Alert type="info" message="首次送审,无已批版本可比对——展示当前全文" style={{ marginBottom: 8 }} showIcon />
         <pre style={paneStyle}>{diff.current ?? "(空)"}</pre>
       </div>
@@ -28,14 +62,17 @@ function DiffView({ id }: { id: number }) {
     </pre>
   )
   return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <div style={{ flex: 1 }}>
-        <Typography.Text type="secondary">已批版本</Typography.Text>
-        {render(diff.approved, currentLines, "#fff1f0")}
-      </div>
-      <div style={{ flex: 1 }}>
-        <Typography.Text type="secondary">当前版本</Typography.Text>
-        {render(diff.current ?? "", approvedLines, "#f6ffed")}
+    <div>
+      {toggle}
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <Typography.Text type="secondary">已批版本</Typography.Text>
+          {render(diff.approved, currentLines, "#fff1f0")}
+        </div>
+        <div style={{ flex: 1 }}>
+          <Typography.Text type="secondary">当前版本</Typography.Text>
+          {render(diff.current ?? "", approvedLines, "#f6ffed")}
+        </div>
       </div>
     </div>
   )
@@ -124,7 +161,7 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
                     <Button onClick={() => act(() => api.submit(active.id), "已重新送审")}>重新送审</Button>
                   )}
                 </Space>
-                <DiffView id={active.id} />
+                <DiffView id={active.id} path={active.path} />
               </>
             )}
           </div>
