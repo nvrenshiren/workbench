@@ -87,8 +87,8 @@ export default function App() {
 
   return (
     <Layout style={{ height: "100%" }}>
-      <Layout.Sider width={340} theme="light" style={{ borderRight: "1px solid #f0f0f0", overflow: "auto" }}>
-        <div style={{ padding: "10px 12px", borderBottom: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Layout.Sider width={340} theme="light" style={{ borderRight: "1px solid #303030", overflow: "auto" }}>
+        <div style={{ padding: "10px 12px", borderBottom: "1px solid #303030", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography.Text strong>Workbench</Typography.Text>
           <Space size={4}>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -97,7 +97,7 @@ export default function App() {
             <Switch size="small" checked={includeMeta} onChange={setIncludeMeta} />
           </Space>
         </div>
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0f0f0" }}>
+        <div style={{ padding: "8px 12px", borderBottom: "1px solid #303030" }}>
           <Space>
             <Badge count={queueCount} size="small">
               <Button size="small" onClick={() => setQueueOpen(true)}>
@@ -117,7 +117,7 @@ export default function App() {
           blockNode
         />
       </Layout.Sider>
-      <Layout.Content style={{ overflow: "auto", background: "#fff" }}>
+      <Layout.Content style={{ overflow: "auto", background: "#141414" }}>
         <NodePanel node={selected} liveEvents={liveEvents} />
       </Layout.Content>
       <ReviewQueue open={queueOpen} onClose={() => setQueueOpen(false)} onActed={() => loadTree(includeMeta)} />

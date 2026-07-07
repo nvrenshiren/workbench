@@ -34,7 +34,7 @@ function DiffView({ id, path }: { id: number; path: string }) {
     return (
       <div>
         {toggle}
-        <div style={{ maxHeight: "62vh", overflow: "auto", border: "1px solid #f0f0f0", borderRadius: 4, padding: "8px 16px" }}>
+        <div style={{ maxHeight: "62vh", overflow: "auto", border: "1px solid #303030", borderRadius: 4, padding: "8px 16px" }}>
           <MarkdownView content={diff.current ?? "(空)"} />
         </div>
       </div>
@@ -67,11 +67,11 @@ function DiffView({ id, path }: { id: number; path: string }) {
       <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1 }}>
           <Typography.Text type="secondary">已批版本</Typography.Text>
-          {render(diff.approved, currentLines, "#fff1f0")}
+          {render(diff.approved, currentLines, "rgba(255,77,79,0.22)")}
         </div>
         <div style={{ flex: 1 }}>
           <Typography.Text type="secondary">当前版本</Typography.Text>
-          {render(diff.current ?? "", approvedLines, "#f6ffed")}
+          {render(diff.current ?? "", approvedLines, "rgba(82,196,26,0.22)")}
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@ function DiffView({ id, path }: { id: number; path: string }) {
 const paneStyle: React.CSSProperties = {
   fontSize: 12,
   lineHeight: "18px",
-  background: "#fafafa",
+  background: "#1f1f1f",
   padding: 8,
   maxHeight: "55vh",
   overflow: "auto",
@@ -129,7 +129,7 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
             dataSource={queue}
             renderItem={a => (
               <List.Item
-                style={{ cursor: "pointer", background: active?.id === a.id ? "#e6f4ff" : undefined }}
+                style={{ cursor: "pointer", background: active?.id === a.id ? "rgba(22,119,255,0.25)" : undefined }}
                 onClick={() => setActive(a)}
               >
                 <Space direction="vertical" size={0}>

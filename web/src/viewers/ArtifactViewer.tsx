@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { api, type Artifact, type ArtifactDetail } from "../api"
 
-mermaid.initialize({ startOnLoad: false, theme: "neutral" })
+mermaid.initialize({ startOnLoad: false, theme: "dark" })
 
 const LANG_BY_EXT: Record<string, string> = {
   ts: "typescript",
@@ -64,8 +64,8 @@ export function MarkdownView({ content }: { content: string }) {
               {children}
             </table>
           ),
-          th: ({ children }) => <th style={{ border: "1px solid #ddd", padding: "6px 10px", background: "#fafafa" }}>{children}</th>,
-          td: ({ children }) => <td style={{ border: "1px solid #ddd", padding: "6px 10px" }}>{children}</td>
+          th: ({ children }) => <th style={{ border: "1px solid #424242", padding: "6px 10px", background: "#1f1f1f" }}>{children}</th>,
+          td: ({ children }) => <td style={{ border: "1px solid #424242", padding: "6px 10px" }}>{children}</td>
         }}
       >
         {content}
@@ -92,11 +92,11 @@ function PrototypeView({ artifact }: { artifact: Artifact }) {
         onChange={e => setWidth(e.target.value)}
         style={{ marginBottom: 12 }}
       />
-      <div style={{ background: "#f5f5f5", padding: 16, display: "flex", justifyContent: "center" }}>
+      <div style={{ background: "#262626", padding: 16, display: "flex", justifyContent: "center" }}>
         <iframe
           src={api.rawUrl(artifact.id)}
           sandbox="allow-scripts"
-          style={{ width, height: "70vh", border: "1px solid #ddd", background: "#fff" }}
+          style={{ width, height: "70vh", border: "1px solid #424242", background: "#fff" }}
           title={artifact.path}
         />
       </div>
@@ -125,11 +125,11 @@ function CodeDirView({ artifact }: { artifact: Artifact }) {
     <div style={{ display: "flex", gap: 12, height: "72vh" }}>
       <List
         size="small"
-        style={{ width: 300, overflow: "auto", borderRight: "1px solid #f0f0f0" }}
+        style={{ width: 300, overflow: "auto", borderRight: "1px solid #303030" }}
         dataSource={files}
         renderItem={f => (
           <List.Item
-            style={{ cursor: "pointer", background: f.rel === selected ? "#e6f4ff" : undefined, paddingLeft: 8 }}
+            style={{ cursor: "pointer", background: f.rel === selected ? "rgba(22,119,255,0.25)" : undefined, paddingLeft: 8 }}
             onClick={() => setSelected(f.rel)}
           >
             <Typography.Text style={{ fontSize: 12 }}>{f.rel}</Typography.Text>
@@ -140,6 +140,7 @@ function CodeDirView({ artifact }: { artifact: Artifact }) {
         {selected && (
           <Editor
             height="100%"
+            theme="vs-dark"
             language={langOf(selected)}
             value={content}
             options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13 }}
@@ -224,6 +225,7 @@ export function ArtifactViewer({ artifact }: { artifact: Artifact }) {
     body = (
       <Editor
         height="72vh"
+        theme="vs-dark"
         language={langOf(artifact.path)}
         value={detail.content ?? ""}
         options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13 }}
