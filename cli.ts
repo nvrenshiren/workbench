@@ -9,11 +9,15 @@
  *   其余(list/plan/qa/...)   见 `help`
  */
 import { openWorkbench } from "./core/db"
-import { parseArgs, printTasks, runInit, runCommand } from "./cli-runner"
-import { listTasks } from "./core/index"
+import { parseArgs, runInit, runCommand, HELP } from "./cli-runner"
 
 async function main() {
   const { command, a } = parseArgs(process.argv.slice(2))
+
+  if (!command || command === "-h" || command === "--help" || command === "help") {
+    console.log(HELP)
+    return
+  }
 
   if (command === "init") {
     await runInit(a.project || process.cwd(), a)
@@ -87,11 +91,6 @@ async function main() {
   }
 
   const ctx = openWorkbench(a.project)
-
-  if (!command) {
-    printTasks(listTasks(ctx, {}))
-    return
-  }
 
   try {
     await runCommand(ctx, command, a)
