@@ -223,6 +223,13 @@ async function promptInit(): Promise<InitAnswers> {
 
 /** init 特例:在 config 存在之前运行,不开常规 ctx。无 flags 且在终端时进交互 */
 export async function runInit(root: string, a: Record<string, any>): Promise<void> {
+  const { existsSync } = await import("node:fs")
+  const { join } = await import("node:path")
+  // fail-fast:已有 config 就别问一整轮问题了
+  if (existsSync(join(root, "workbench.config.json"))) {
+    console.log(chalk.red("错误: workbench.config.json 已存在,init 只用于空项目引导(改配置请直接编辑该文件)"))
+    process.exit(1)
+  }
   let opts: {
     endpoints: string[]
     platforms?: string[]
