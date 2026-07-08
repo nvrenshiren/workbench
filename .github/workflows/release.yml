@@ -1,43 +1,35 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 permissions:
-  contents: read
-  id-token: write # provenance 签名需要 OIDC token
+  contents: write # 建 release / 打 tag / 推 version+changelog 回 main
+  issues: write # semantic-release 在相关 issue/PR 评论
+  pull-requests: write
+  id-token: write # provenance 签名
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # semantic-release 需要完整 history + tags
 
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
-
-      - name: 校验 tag 与 package.json 版本一致
-        if: github.event_name == 'release'
-        run: |
-          PKG=$(node -p "require('./package.json').version")
-          TAG=${GITHUB_REF_NAME#v}
-          if [ "$PKG" != "$TAG" ]; then
-            echo "::error::package.json 版本 ($PKG) 与 release tag ($TAG) 不一致,先 bump 版本再发 Release"
-            exit 1
-          fi
-          echo "版本一致: $PKG"
 
       - name: 隔离检查
         run: pnpm run check:isolation
@@ -48,8 +40,11 @@ jobs:
       - name: 测试
         run: pnpm test
 
-      # 构建由 package.json 的 prepublishOnly(pnpm run build)在 publish 时触发
-      - name: 发布到 npm
-        run: npm publish --provenance --access public
+      # 分析 Conventional Commits → 决定版本 → 改版本号 + CHANGELOG → 打 tag → npm publish(provenance)→ 建 GitHub Release
+      # 构建由 package.json 的 prepublishOnly 在 npm publish 时触发
+      - name: 语义化发布
+        run: pnpm exec semantic-release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
