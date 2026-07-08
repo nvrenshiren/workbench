@@ -117,7 +117,13 @@ function printTaskDetail(ctx: Ctx, id: number) {
 
 const ALL_PLATFORMS = ["claude", "codex", "opencode", "cursor"]
 
-/** models.dev:拉取支持 tool_call 的模型清单(provider/model 串),失败返回空 */
+/** 一线 provider 优先(下拉默认视图先展示这些,避免被聚合商 302ai/requesty/openrouter 等刷屏) */
+const PRIORITY_PROVIDERS = [
+  "anthropic", "openai", "google", "xai", "deepseek",
+  "mistral", "meta", "groq", "qwen", "moonshotai", "zhipuai", "z-ai", "cohere"
+]
+
+/** models.dev:拉取支持 tool_call 的模型清单(provider/model 串),一线 provider 优先;失败返回空 */
 async function fetchToolCallModels(): Promise<string[]> {
   try {
     const res = await fetch("https://models.dev/api.json")
@@ -125,7 +131,11 @@ async function fetchToolCallModels(): Promise<string[]> {
     const out: string[] = []
     for (const [p, v] of Object.entries(j))
       for (const [m, mv] of Object.entries(v.models ?? {})) if (mv.tool_call) out.push(`${p}/${m}`)
-    return [...new Set(out)].sort()
+    const rank = (m: string) => {
+      const i = PRIORITY_PROVIDERS.indexOf(m.split("/")[0])
+      return i === -1 ? PRIORITY_PROVIDERS.length : i
+    }
+    return [...new Set(out)].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
   } catch {
     return []
   }
@@ -172,11 +182,12 @@ async function promptInit(): Promise<InitAnswers> {
   for (const p of platforms) {
     const picked = await search<string>({
       message: zh ? `${p} 模型(输入过滤;选"默认"用平台缺省)` : `${p} model (type to filter)`,
+      pageSize: 12,
       source: async term => {
         const def = { name: zh ? "(默认 / default)" : "(default)", value: "" }
         const list = models
           .filter(m => !term || m.toLowerCase().includes(term.toLowerCase()))
-          .slice(0, 30)
+          .slice(0, 40)
           .map(m => ({ name: m, value: m }))
         return [def, ...list]
       }
