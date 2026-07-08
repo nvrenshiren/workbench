@@ -5,18 +5,38 @@
   "license": "MIT",
   "author": "Dawi",
   "homepage": "https://github.com/nvrenshiren/workbench#readme",
-  "repository": { "type": "git", "url": "https://github.com/nvrenshiren/workbench.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nvrenshiren/workbench.git"
+  },
   "bugs": "https://github.com/nvrenshiren/workbench/issues",
   "keywords": [
-    "ai-agents", "coding-agent", "claude-code", "codex", "opencode", "cursor",
-    "mcp", "spec-driven-development", "workflow-engine", "developer-tools"
+    "ai-agents",
+    "coding-agent",
+    "claude-code",
+    "codex",
+    "opencode",
+    "cursor",
+    "mcp",
+    "spec-driven-development",
+    "workflow-engine",
+    "developer-tools"
   ],
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "workbench": "dist/cli.mjs"
   },
-  "files": ["dist", "web/dist", "templates", "preset"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist",
+    "web/dist",
+    "templates",
+    "preset"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
@@ -30,6 +50,7 @@
   "dependencies": {
     "@fastify/cors": "^11",
     "@fastify/static": "^8",
+    "@inquirer/prompts": "^8.5.2",
     "@modelcontextprotocol/sdk": "^1",
     "better-sqlite3": "^12",
     "chalk": "^5",

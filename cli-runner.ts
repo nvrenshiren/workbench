@@ -138,49 +138,53 @@ interface InitAnswers {
   language: "zh" | "en"
 }
 
-/** 交互式引导:选语言 / 平台(多选)/ 端 / 模型(models.dev) */
+/** 交互式引导:inquirer 提示选语言 / 平台(多选)/ 端 / 模型(models.dev 搜索补全) */
 async function promptInit(): Promise<InitAnswers> {
-  const { createInterface } = await import("node:readline/promises")
-  const rl = createInterface({ input: process.stdin, output: process.stdout })
-  const ask = async (q: string, def: string) => (await rl.question(q)).trim() || def
-  try {
-    console.log(chalk.bold("\n═══ workbench init ═══\n"))
-    console.log("① 语言 / Language:  1) 中文   2) English")
-    const language = (await ask("   > [1] ", "1")).startsWith("2") ? "en" : "zh"
+  const { checkbox, input, search, select } = await import("@inquirer/prompts")
 
-    console.log(`\n② 平台 / Platforms(空格分隔多选;可选: ${ALL_PLATFORMS.join(" ")})`)
-    let platforms: string[] = []
-    while (!platforms.length) {
-      platforms = (await ask("   > [claude] ", "claude")).split(/[\s,]+/).filter(Boolean)
-      const bad = platforms.filter(p => !ALL_PLATFORMS.includes(p))
-      if (bad.length) {
-        console.log(chalk.red(`   未知平台: ${bad.join(", ")}`))
-        platforms = []
+  const language = await select<"zh" | "en">({
+    message: "语言 / Language",
+    choices: [
+      { name: "中文", value: "zh" },
+      { name: "English", value: "en" }
+    ]
+  })
+  const zh = language === "zh"
+
+  const platforms = await checkbox({
+    message: zh ? "平台(空格勾选,回车确认)" : "Platforms (space to select, enter to confirm)",
+    choices: ALL_PLATFORMS.map(p => ({ name: p, value: p, checked: p === "claude" })),
+    required: true
+  })
+
+  const endpoints = (
+    await input({
+      message: zh ? "端(逗号分隔)" : "Endpoints (comma-separated)",
+      default: "service,web"
+    })
+  )
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  const models = await fetchToolCallModels()
+  const modelObj: Record<string, string> = {}
+  for (const p of platforms) {
+    const picked = await search<string>({
+      message: zh ? `${p} 模型(输入过滤;选"默认"用平台缺省)` : `${p} model (type to filter)`,
+      source: async term => {
+        const def = { name: zh ? "(默认 / default)" : "(default)", value: "" }
+        const list = models
+          .filter(m => !term || m.toLowerCase().includes(term.toLowerCase()))
+          .slice(0, 30)
+          .map(m => ({ name: m, value: m }))
+        return [def, ...list]
       }
-    }
-
-    const endpoints = (await ask("\n③ 端 / Endpoints(逗号分隔)[service,web]: ", "service,web"))
-      .split(",").map(s => s.trim()).filter(Boolean)
-
-    console.log("\n④ 模型 / Model —— 拉取 models.dev …")
-    const models = await fetchToolCallModels()
-    if (models.length) {
-      console.log("   参考(models.dev,支持 tool_call;也可粘贴任意模型串):")
-      for (const m of models.filter(m => /^(anthropic|openai|google|xai)\//.test(m)).slice(0, 24))
-        console.log("     " + m)
-      console.log("   每个平台粘贴一个模型串,回车=该平台默认")
-    } else {
-      console.log("   (models.dev 不可用,回车用各平台默认)")
-    }
-    const modelObj: Record<string, string> = {}
-    for (const p of platforms) {
-      const m = await ask(`   ${p} model(回车=默认): `, "")
-      if (m) modelObj[p] = m
-    }
-    return { platforms, endpoints, model: Object.keys(modelObj).length ? modelObj : undefined, language }
-  } finally {
-    rl.close()
+    })
+    if (picked) modelObj[p] = picked
   }
+
+  return { platforms, endpoints, model: Object.keys(modelObj).length ? modelObj : undefined, language }
 }
 
 /** init 特例:在 config 存在之前运行,不开常规 ctx。无 flags 且在终端时进交互 */
