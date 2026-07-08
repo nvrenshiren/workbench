@@ -2,5 +2,9 @@ node_modules
 web/dist
 *.tsbuildinfo
 .DS_Store
-.workbench/workbench.db-shm
-.workbench/workbench.db-wal
+
+# init/gen-agents 生成的项目层产物(纯工具仓库不纳入版本库)
+.claude/
+.mcp.json
+workbench.config.json
+.workbench/

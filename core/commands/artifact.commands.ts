@@ -3,7 +3,7 @@ import { isAbsolute, join, relative } from "node:path"
 import { reviewStatus } from "../derive"
 import { logEvent } from "../events"
 import { hashPath } from "../hash"
-import { inferKind, normalizeModule } from "../kind"
+import { inferKind, kindSpec, normalizeModule } from "../kind"
 import type { ArtifactRow, Ctx, ReviewStatus } from "../types"
 
 export interface ArtifactRef {
@@ -133,8 +133,11 @@ export function registerOutput(ctx: Ctx, p: RegisterOutputParams): RegisterOutpu
     throw new Error(`产出文件已存在: ${relPath}`)
   }
 
-  const module = normalizeModule(p.module, ctx.config)
   const kind = inferKind(relPath, ctx.config)
+  // 项目级/端级契约(project/roles/glossary/baseline、元产物、design-system)不挂业务模块坐标:
+  // 它们跨模块通用,无论登记传入什么 module 一律归零,否则会被树误当成业务模块节点(如历史上的 common、account)。
+  const level = kindSpec(ctx.config, kind).level
+  const module = level === "project" || level === "endpoint" ? null : normalizeModule(p.module, ctx.config)
   const hash = hashPath(abs)!
   const actor = p.actor ?? p.role
 

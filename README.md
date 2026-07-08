@@ -17,7 +17,7 @@
 - **协议 lint**:能机器查的约定降级为 gate 卡点
 - **可视化工作台**:树 + markdown/mermaid/原型/代码渲染 + 待审队列 diff + SSE 实时
 - **AI 接入**:5 个 agent 定义(模板生成)+ MCP typed tools + Claude Code hooks
-- **异构可移植**:纯后端项目自动裁掉 designer/qa;零业务耦合(lint 强制)
+- **异构可移植**:纯后端项目自动裁掉 designer(qa 保留);零业务耦合(lint 强制)
 
 ## 快速开始
 
@@ -28,8 +28,9 @@ cd my-project/workbench && pnpm install && cd ..
 # 2. 一键引导(声明你的端)
 npx tsx workbench/cli.ts init --endpoints=service,admin,weapp,app
 
-# 3. 填 workbench.config.json 的 codeRoots,启动工作台
-cd workbench && pnpm run serve      # → http://127.0.0.1:5620
+# 3. 填 workbench.config.json 的 codeRoots,启动工作台(首次需先 build 前端)
+cd workbench && pnpm start          # 首次/前端改动后:build 前端 + 起 server → http://127.0.0.1:5620
+# 前端已 build 过、只重启后端:pnpm run serve
 ```
 
 **完整教程见 [GETTING-STARTED.md](./GETTING-STARTED.md)。**
@@ -56,7 +57,8 @@ cd workbench && pnpm run serve      # → http://127.0.0.1:5620
 ## 脚本
 
 ```bash
-pnpm run serve            # 启动工作台(server + 已构建前端)
+pnpm start                # 启动工作台(build 前端 + 起 server;首次用它)
+pnpm run serve            # 只起 server,不 build 前端(web/dist 未生成会 404)
 pnpm run web:build        # 构建前端
 pnpm test                 # core 单元测试
 pnpm run typecheck        # 类型检查

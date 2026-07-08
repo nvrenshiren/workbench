@@ -1,4 +1,4 @@
-import { Alert, Button, Drawer, Empty, Input, Modal, Segmented, Space, Tag, Typography, message } from "antd"
+import { Alert, Button, Card, Drawer, Empty, Flex, Input, Modal, Segmented, Space, Tag, Typography, message } from "antd"
 import { useCallback, useEffect, useState } from "react"
 import { api, type Artifact } from "./api"
 import { MarkdownView } from "./viewers/ArtifactViewer"
@@ -32,11 +32,9 @@ function DiffView({ id, path }: { id: number; path: string }) {
   ) : null
 
   // 统一为纵向 flex 填满可用高度:工具条固定,内容区 flex:1 内部滚动
-  const fill: React.CSSProperties = { height: "100%", display: "flex", flexDirection: "column" }
-
   if (isMd && mode === "preview") {
     return (
-      <div style={fill}>
+      <Flex vertical style={{ height: "100%" }}>
         {toggle}
         <div
           style={{
@@ -51,17 +49,17 @@ function DiffView({ id, path }: { id: number; path: string }) {
         >
           <MarkdownView content={diff.current ?? "(空)"} />
         </div>
-      </div>
+      </Flex>
     )
   }
 
   if (diff.approved === null) {
     return (
-      <div style={fill}>
+      <Flex vertical style={{ height: "100%" }}>
         {toggle}
         <Alert type="info" message="首次送审,无已批版本可比对——展示当前全文" style={{ marginBottom: 8 }} showIcon />
         <pre style={{ ...paneStyle, flex: 1, minHeight: 0 }}>{diff.current ?? "(空)"}</pre>
-      </div>
+      </Flex>
     )
   }
   const approvedLines = new Set(diff.approved.split("\n"))
@@ -76,19 +74,19 @@ function DiffView({ id, path }: { id: number; path: string }) {
     </pre>
   )
   return (
-    <div style={fill}>
+    <Flex vertical style={{ height: "100%" }}>
       {toggle}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+      <Flex gap={8} style={{ flex: 1, minHeight: 0 }}>
+        <Flex vertical style={{ flex: 1, minWidth: 0 }}>
           <Typography.Text type="secondary">已批版本</Typography.Text>
           {render(diff.approved, currentLines, "rgba(255,77,79,0.22)")}
-        </div>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        </Flex>
+        <Flex vertical style={{ flex: 1, minWidth: 0 }}>
           <Typography.Text type="secondary">当前版本</Typography.Text>
           {render(diff.current ?? "", approvedLines, "rgba(82,196,26,0.22)")}
-        </div>
-      </div>
-    </div>
+        </Flex>
+      </Flex>
+    </Flex>
   )
 }
 
@@ -151,7 +149,7 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
       {queue.length === 0 ? (
         <Empty description="队列已清空,没有待审产物" />
       ) : (
-        <div style={{ display: "flex", gap: 16, height: "100%" }}>
+        <Flex gap={16} style={{ height: "100%" }}>
           <div style={{ width: 330, overflow: "auto", paddingRight: 4, flexShrink: 0 }}>
             {queue.map(a => {
               const isActive = active?.id === a.id
@@ -159,15 +157,15 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
               const dir = idx >= 0 ? a.path.slice(0, idx + 1) : ""
               const file = idx >= 0 ? a.path.slice(idx + 1) : a.path
               return (
-                <div
+                <Card
                   key={a.id}
                   onClick={() => setActive(a)}
+                  styles={{ body: { padding: "10px 12px" } }}
                   style={{
                     cursor: "pointer",
-                    padding: "10px 12px",
                     marginBottom: 8,
                     borderRadius: 10,
-                    border: `1px solid ${isActive ? "rgba(47,189,175,0.55)" : SURFACE.line}`,
+                    borderColor: isActive ? "rgba(47,189,175,0.55)" : SURFACE.line,
                     background: isActive ? "rgba(47,189,175,0.08)" : SURFACE.panel,
                     transition: "border-color .18s ease, background .18s ease"
                   }}
@@ -188,11 +186,11 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
                     <span style={{ color: "rgba(255,255,255,0.35)" }}>{dir}</span>
                     <span style={{ color: "rgba(255,255,255,0.88)", fontWeight: 500 }}>{file}</span>
                   </div>
-                </div>
+                </Card>
               )
             })}
           </div>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <Flex vertical style={{ flex: 1, minWidth: 0 }}>
             {active && (
               <>
                 <Space style={{ marginBottom: 12, flexShrink: 0 }}>
@@ -214,8 +212,8 @@ export function ReviewQueue({ open, onClose, onActed }: { open: boolean; onClose
                 </div>
               </>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       )}
       <Modal
         open={rejecting}

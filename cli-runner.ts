@@ -122,11 +122,16 @@ export function runInit(root: string, a: Record<string, any>): void {
     console.log(chalk.red("错误: 需要 --endpoints=service,admin,..."))
     process.exit(1)
   }
-  const r = initProject(root, { endpoints: String(a.endpoints).split(","), gitHooks: a.hooks !== "false" })
+  const r = initProject(root, {
+    endpoints: String(a.endpoints).split(","),
+    gitHooks: a.hooks !== "false",
+    preset: a.preset !== "false"
+  })
   const cli = r.ctx.config.cli
   console.log(chalk.green(`\n✅ 项目引导完成\n`))
   console.log(`  配置文件   ${r.configPath}`)
   console.log(`  文档骨架   ${r.scaffolded.length} 个目录`)
+  console.log(`  预置文件   ${r.preset.length ? r.preset.join(", ") : "无(preset/ 为空或均已存在)"}`)
   console.log(`  agent 定义 ${r.agents.length} 份(.claude/agents/)`)
   console.log(`  元产物注册 ${r.metaRegistered} 份(draft)`)
   console.log(`  MCP        ${r.mcpPath ?? "未写(已存在)"}`)

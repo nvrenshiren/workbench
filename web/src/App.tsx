@@ -1,8 +1,9 @@
-import { Badge, Button, Layout, Space, Switch, Tooltip, Tree, Typography, message } from "antd"
+import { Badge, Button, Flex, Layout, Space, Switch, Tooltip, Tree, Typography, message } from "antd"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, type TreeNode, type WbEvent } from "./api"
 import { NodePanel } from "./NodePanel"
 import { ReviewQueue } from "./ReviewQueue"
+import { SkillCandidates } from "./SkillCandidates"
 import { ACCENT, MONO, SURFACE } from "./ui"
 
 const HEALTH_COLOR: Record<string, string> = {
@@ -25,7 +26,7 @@ function toAntNode(n: TreeNode): AntNode {
     key: n.key,
     node: n,
     title: (
-      <span style={{ display: "flex", alignItems: "center", gap: 7, paddingRight: 4 }}>
+      <Flex align="center" gap={7} style={{ paddingRight: 4 }}>
         <span
           style={{
             width: 6,
@@ -37,7 +38,7 @@ function toAntNode(n: TreeNode): AntNode {
           }}
         />
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <Flex align="center" gap={6} style={{ marginLeft: "auto", flexShrink: 0 }}>
           {n.health !== "ok" && (
             <span style={{ fontSize: 10, color: HEALTH_COLOR[n.health] }}>{n.health}</span>
           )}
@@ -56,8 +57,8 @@ function toAntNode(n: TreeNode): AntNode {
               {done}
             </span>
           )}
-        </span>
-      </span>
+        </Flex>
+      </Flex>
     ),
     children: n.children.length > 0 ? n.children.map(toAntNode) : undefined
   }
@@ -70,11 +71,22 @@ export default function App() {
   const [liveEvents, setLiveEvents] = useState<WbEvent[]>([])
   const [queueCount, setQueueCount] = useState(0)
   const [queueOpen, setQueueOpen] = useState(false)
+  const [skillCount, setSkillCount] = useState(0)
+  const [skillOpen, setSkillOpen] = useState(false)
   const refreshTimer = useRef<number | null>(null)
+  const prevSkill = useRef(-1) // -1 = 首次加载,不弹提醒;之后仅在计数增长时提醒
 
   const loadTree = useCallback(async (meta: boolean) => {
     setTree(await api.tree(meta))
     api.reviewQueue().then(q => setQueueCount(q.length))
+    api.skillCandidates().then(r => {
+      const n = r.candidates + r.redFlags
+      if (prevSkill.current >= 0 && n > prevSkill.current) {
+        message.info(`反馈提炼出 ${r.candidates} 个 skill 候选 / ${r.redFlags} 个 red-flag,见「经验提炼」`)
+      }
+      prevSkill.current = n
+      setSkillCount(n)
+    })
   }, [])
 
   useEffect(() => {
@@ -149,6 +161,11 @@ export default function App() {
           <Button size="small" onClick={runSync}>
             Sync 对账
           </Button>
+          <Badge count={skillCount} size="small" offset={[-2, 2]} color="#722ed1">
+            <Button size="small" onClick={() => setSkillOpen(true)}>
+              经验提炼
+            </Button>
+          </Badge>
           <Badge count={queueCount} size="small" offset={[-2, 2]}>
             <Button size="small" type="primary" onClick={() => setQueueOpen(true)}>
               待审队列
@@ -178,6 +195,7 @@ export default function App() {
         </Layout.Content>
       </Layout>
       <ReviewQueue open={queueOpen} onClose={() => setQueueOpen(false)} onActed={() => loadTree(includeMeta)} />
+      <SkillCandidates open={skillOpen} onClose={() => setSkillOpen(false)} />
     </Layout>
   )
 }

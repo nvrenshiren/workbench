@@ -82,11 +82,41 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   return data
 }
 
+export interface FeedbackEvidence {
+  artifactId: number
+  path: string
+  module: string | null
+  verdict: 1 | -1
+  weight: number
+  comment: string | null
+  actor: string
+  createdAt: string
+}
+
+export interface DistillGroup {
+  endpoint: string
+  kind: string
+  posScore: number
+  negScore: number
+  bucket: "skill-candidate" | "red-flag" | "observation"
+  reason?: "mixed" | "insufficient"
+  evidence: FeedbackEvidence[]
+}
+
+export interface SkillCandidatesReport {
+  groups: DistillGroup[]
+  candidates: number
+  redFlags: number
+  halfLifeDays: number
+  guidance: string[]
+}
+
 export const ACTOR = "user"
 
 export const api = {
   tree: (includeMeta: boolean) => get<TreeNode>(`/api/tree?includeMeta=${includeMeta ? 1 : 0}`),
   reviewQueue: () => get<Artifact[]>(`/api/review-queue`),
+  skillCandidates: () => get<SkillCandidatesReport>(`/api/skill-candidates`),
   diff: (id: number) => get<{ approved: string | null; current: string | null }>(`/api/artifact/${id}/diff`),
   approve: (id: number, trivial = false) => post(`/api/artifact/${id}/approve`, { actor: ACTOR, trivial }),
   reject: (id: number, reason: string) => post(`/api/artifact/${id}/reject`, { actor: ACTOR, reason }),

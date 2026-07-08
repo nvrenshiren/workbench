@@ -13,11 +13,14 @@ export const WORKBENCH_DIR = resolve(join(import.meta.dirname, ".."))
  * 还是仓库根都能得到正确路径(根即包目录时返回 "cli.ts" 这类裸路径)。
  */
 export function workbenchRelPath(root: string, ...segments: string[]): string {
-  return relative(resolve(root), join(WORKBENCH_DIR, ...segments)).replace(/\\/g, "/")
+  return relative(resolve(root), join(WORKBENCH_DIR, ...segments)).replace(
+    /\\/g,
+    "/"
+  )
 }
 
 const DEFAULTS: WorkbenchConfig = {
-  endpoints: ["service", "admin", "weapp", "app"],
+  endpoints: ["service", "web"],
   docs: {
     prd: "docs/prd",
     architecture: "docs/architecture",
@@ -28,15 +31,22 @@ const DEFAULTS: WorkbenchConfig = {
   machineChecks: { enabled: false },
   protocolLints: [],
   moduleMapping: {},
-  feedbackHalfLifeDays: 90,
+  feedbackHalfLifeDays: 15,
   gates: { approvalMode: "warn", writeGate: "observe" },
   git: { taskTrailer: "off", trailerKey: "Task" },
-  legacyDb: "tasks/task.db",
+  legacyDb: ".workbench/legacy.db",
   dataDir: ".workbench",
   cli: "npx tsx workbench/cli.ts",
   pipeline: ["product-manager", "architect", "designer", "developer", "qa"],
   roleProduces: {
-    "product-manager": ["project", "roles", "glossary", "flow", "module-prd", "page-prd"],
+    "product-manager": [
+      "project",
+      "roles",
+      "glossary",
+      "flow",
+      "module-prd",
+      "page-prd"
+    ],
     architect: ["db-doc", "api-doc"],
     designer: ["design-system", "design-prompt", "prototype"],
     developer: ["code"],
@@ -60,7 +70,9 @@ export function loadConfig(root: string): WorkbenchConfig {
   const dynamicCli = `npx tsx ${workbenchRelPath(root, "cli.ts")}`
   const file = join(root, CONFIG_FILENAME)
   if (!existsSync(file)) return { ...DEFAULTS, cli: dynamicCli }
-  const raw = JSON.parse(readFileSync(file, "utf-8")) as Partial<WorkbenchConfig>
+  const raw = JSON.parse(
+    readFileSync(file, "utf-8")
+  ) as Partial<WorkbenchConfig>
   return {
     ...DEFAULTS,
     cli: dynamicCli,

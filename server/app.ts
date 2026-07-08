@@ -11,6 +11,7 @@ import {
   rejectArtifact,
   submitArtifact
 } from "../core/commands/artifact.commands"
+import { runRetrospective } from "../core/commands/retro.command"
 import { syncArtifacts } from "../core/commands/sync.command"
 import { claimTask, updateTask } from "../core/commands/task.commands"
 import { everApproved, prototypeEndorsed } from "../core/derive"
@@ -181,6 +182,18 @@ export async function createServer(ctx: Ctx): Promise<FastifyInstance> {
         ever_approved: everApproved(r),
         endorsed: r.kind === "prototype" ? prototypeEndorsed(ctx.db, r) : false
       }))
+  })
+
+  // 反馈进化:加权提炼出的 skill 候选 / red-flag 组(确定性,复用 retro.command)
+  app.get("/api/skill-candidates", async () => {
+    const report = runRetrospective(ctx)
+    return {
+      groups: report.groups.filter(g => g.bucket === "skill-candidate" || g.bucket === "red-flag"),
+      candidates: report.candidates,
+      redFlags: report.redFlags,
+      halfLifeDays: report.halfLifeDays,
+      guidance: report.guidance
+    }
   })
 
   app.get<{ Params: { id: string } }>("/api/artifact/:id/diff", async req => {

@@ -84,7 +84,7 @@ export function planModule(ctx: Ctx, moduleRaw: string, creator = "product-manag
     )
   }
 
-  // 异构项目支持:不在 pipeline 里的角色不生成任务(纯后端项目无 designer/qa)
+  // 异构项目支持:不在 pipeline 里的角色不生成任务(纯后端项目无 designer;qa 在 pipeline,但无 page-prd 时不产生页面 qa 任务)
   const activeRoles = new Set(ctx.config.pipeline)
   const filtered = desired.filter(d => activeRoles.has(d.role))
   desired.length = 0

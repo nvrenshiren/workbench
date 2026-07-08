@@ -50,20 +50,29 @@ cd ..
 
 ```bash
 npx tsx workbench/cli.ts init --endpoints=service,admin,weapp,app
-# 纯后端项目:   --endpoints=service         (自动裁掉 designer/qa)
+# 纯后端项目:   --endpoints=service         (自动裁掉 designer;qa 保留)
 # 前后端:       --endpoints=service,web
 ```
 
 它会生成:`workbench.config.json`、`docs/` 骨架、`.claude/agents/*`(按你的端裁剪)、
 `.mcp.json`、git hooks、以及数据库 `.workbench/`。
 
+> **预置文件部署**:`workbench/preset/` 下的所有文件(含 dotfiles / 子目录,保留相对结构)会一并
+> 部署到项目根——放你项目通用的脚手架(如 `.editorconfig`、`.prettierrc`、`.gitignore` 模板等)。
+> 与其余步骤一致的**幂等防覆盖**:项目根已存在同名文件则跳过,不动你已有的。`--preset=false` 可关。
+
 ### 4. 填代码目录约定,启动工作台
 
 编辑 `workbench.config.json` 的 `codeRoots`(见 §八),然后:
 
 ```bash
-cd workbench && pnpm run serve      # → http://127.0.0.1:5620
+cd workbench && pnpm start          # 首次/前端更新后:先 web:build 再 serve → http://127.0.0.1:5620
+# 前端已 build 过、只想重启后端:pnpm run serve
 ```
+
+> ⚠️ `pnpm run serve` 只起 API,不 build 前端。若前端 `web/dist` 还没生成就直接 `serve`,
+> 访问根路由 `/` 会得到 `Route GET:/ not found`(404)——因为静态托管在 server 启动时才按
+> `existsSync(web/dist)` 注册。**首次或前端改动后用 `pnpm start`**;build 完必须重启 server 才生效。
 
 浏览器打开就是你的工作台。此刻它是空的——因为还没有需求。
 
@@ -204,10 +213,10 @@ export                               # events/feedback 导出 jsonl(post-commit 
   "pipeline": ["product-manager", "architect", "developer", "qa"],  // 角色流水线;不含的角色不派任务
   "cli": "npx tsx workbench/cli.ts",          // 注入 agent 定义的 CLI 前缀
   "codeRoots": {                              // 【必填】每端代码目录,{module} 是模块名占位
-    "service": ["service/src/modules/{client}/{module}"],
+    "service": ["service/src/modules/{module}"],
     "admin":   ["admin/src/pages/{module}"]
   },
-  "moduleMapping": { "landType": "land" },     // 细模块归并到粗模块
+  "moduleMapping": { "userProfile": "user" },  // 细模块归并到粗模块
   "machineChecks": {                          // developer complete 时跑(enabled=true 才生效)
     "enabled": false,
     "service": ["cd service && npx tsc --noEmit"]

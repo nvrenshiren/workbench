@@ -19,7 +19,7 @@ import { openWorkbenchAt } from "../core/db"
 /** 固定时间基准:提炼计算全部注入 now,结果确定 */
 const NOW = new Date("2026-07-06T00:00:00Z")
 const FRESH = "2026-07-06 00:00:00"
-const DAYS_90_AGO = "2026-04-07 00:00:00" // 恰好 90 天前 = 一个半衰期
+const DAYS_15_AGO = "2026-06-21 00:00:00" // 恰好 15 天前 = 一个半衰期(feedbackHalfLifeDays 默认 15)
 
 describe("M8 反馈加权提炼(半衰期 × actor 权重 × 分桶)", () => {
   const root = mkdtempSync(join(tmpdir(), "wb-m8-"))
@@ -92,10 +92,10 @@ describe("M8 反馈加权提炼(半衰期 × actor 权重 × 分桶)", () => {
     assert.equal(g.reason, "insufficient")
   })
 
-  it("半衰期加权:90 天前的人工 +1 衰减为 0.5", () => {
+  it("半衰期加权:15 天前的人工 +1 衰减为 0.5", () => {
     const c = insertArtifact("code", "common", "m1", "packages/m1")
     insertFeedback(c, 1, "user", FRESH)
-    insertFeedback(c, 1, "user", DAYS_90_AGO)
+    insertFeedback(c, 1, "user", DAYS_15_AGO)
     const g = groupOf(distillFeedback(ctx, { now: NOW }), "common")
     assert.equal(g.posScore, 1.5)
     assert.deepEqual(g.evidence.map(e => e.weight), [1, 0.5])

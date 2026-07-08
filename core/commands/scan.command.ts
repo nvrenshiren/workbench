@@ -79,7 +79,7 @@ function walkFiles(absDir: string, rel: string, out: string[]) {
   }
 }
 
-/** codeRoots 模式展开:占位符段(如 {client}/{module})逐层枚举目录,{module} 段捕获模块名 */
+/** codeRoots 模式展开:占位符段(如 {group}/{module})逐层枚举目录,{module} 段捕获模块名 */
 function expandCodeRoots(ctx: Ctx): { dir: string; endpoint: string; module: string }[] {
   const results: { dir: string; endpoint: string; module: string }[] = []
   for (const [endpoint, patterns] of Object.entries(ctx.config.codeRoots)) {

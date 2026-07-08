@@ -74,7 +74,7 @@ export function claimTask(ctx: Ctx, { id, assignee }: { id: number; assignee: st
     // 原子领取:仅 pending 且(无人认领或本人预分配)可领,防止并发 agent 撞车
     const result = ctx.db
       .prepare(
-        `UPDATE tasks SET assignee = ?, claim_commit = ?, updated_at = CURRENT_TIMESTAMP
+        `UPDATE tasks SET assignee = ?, status = 'in_progress', claim_commit = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND status = 'pending' AND (assignee IS NULL OR assignee = ?)`
       )
       .run(assignee, claimCommit, id, assignee)

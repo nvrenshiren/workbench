@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import assert from "node:assert/strict"
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { after, describe, it } from "node:test"
@@ -55,6 +55,33 @@ describe("M7 异构 dry-run:纯后端项目(通用性唯一可信测试)", () =>
     claimTask(ctx, { id: dev.id, assignee: "developer" })
     const { warnings } = updateTask(ctx, { id: dev.id, status: "completed", operator: "developer", force: true })
     assert.ok(Array.isArray(warnings))
+  })
+})
+
+describe("init:根 package.json 补 tsx devDep", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-tsx-"))
+  let ctx: Ctx
+  after(() => {
+    ctx?.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("有 package.json 但缺 tsx → 补 ^4,不丢原有 devDep", () => {
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ name: "x", devDependencies: { typescript: "^5" } }, null, 2) + "\n"
+    )
+    const r = initProject(root, {
+      endpoints: ["service"],
+      gitHooks: false,
+      mcp: false,
+      preset: false
+    })
+    ctx = r.ctx
+    assert.equal(r.rootTsxAdded, true)
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"))
+    assert.equal(pkg.devDependencies.tsx, "^4")
+    assert.equal(pkg.devDependencies.typescript, "^5")
   })
 })
 

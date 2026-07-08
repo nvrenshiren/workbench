@@ -281,6 +281,10 @@ export interface ExportResult {
  * 两表均 append-only,全量覆盖写即幂等;post-commit hook 顺手跑。
  */
 export function exportEventLog(ctx: Ctx): ExportResult {
+  // 先把 WAL 合并进主 db 文件再导出:workbench.db 是 WAL 模式,不 checkpoint 的话近期状态只留在
+  // .db-wal(被 gitignore),主 db 会停在旧版、无法随 git 同步(历次 DB 丢失的根因)。export 由 post-commit
+  // hook 每次提交后调用,在此 checkpoint(TRUNCATE) 确保 WAL 合并落盘、不无限积压。
+  ctx.db.pragma("wal_checkpoint(TRUNCATE)")
   const dir = join(ctx.root, ctx.config.dataDir)
   mkdirSync(dir, { recursive: true })
   const dump = (table: "events" | "artifact_feedback", file: string): number => {

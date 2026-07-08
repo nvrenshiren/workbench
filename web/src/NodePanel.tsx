@@ -1,4 +1,4 @@
-import { Badge, Button, Drawer, Empty, List, Space, Table, Tabs, Tag, Typography } from "antd"
+import { Badge, Button, Card, Drawer, Empty, Flex, List, Space, Table, Tabs, Tag, Typography } from "antd"
 import { useEffect, useState } from "react"
 import { api, type Artifact, type Task, type TreeNode, type WbEvent } from "./api"
 import { ArtifactViewer } from "./viewers/ArtifactViewer"
@@ -69,14 +69,14 @@ export function NodePanel({
   if (!node || node.key === "__root__") {
     return (
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "56px 24px" }}>
-        <div
+        <Card
           style={{
             background: SURFACE.panel,
-            border: `1px solid ${SURFACE.line}`,
+            borderColor: SURFACE.line,
             borderRadius: 12,
-            padding: "28px 32px",
             marginBottom: 20
           }}
+          styles={{ body: { padding: "28px 32px" } }}
         >
           <Typography.Title level={4} style={{ margin: 0, letterSpacing: -0.3 }}>
             验证是唯一瓶颈
@@ -95,20 +95,20 @@ export function NodePanel({
               {queueCount > 0 ? `${queueCount} 份契约等待你的裁决` : "队列已清空"}
             </Typography.Text>
           </Space>
-        </div>
-        <div
+        </Card>
+        <Card
           style={{
             background: SURFACE.panel,
-            border: `1px solid ${SURFACE.line}`,
-            borderRadius: 12,
-            padding: "16px 20px"
+            borderColor: SURFACE.line,
+            borderRadius: 12
           }}
+          styles={{ body: { padding: "16px 20px" } }}
         >
           <div style={{ fontSize: 11, letterSpacing: 1, color: "rgba(255,255,255,0.35)", marginBottom: 10 }}>
             实时事件
           </div>
           <EventFeed events={liveEvents} />
-        </div>
+        </Card>
       </div>
     )
   }
@@ -270,10 +270,12 @@ function EventFeed({ events }: { events: WbEvent[] }) {
         const payload = e.payload ? (JSON.parse(e.payload) as Record<string, unknown>) : {}
         const coord = [e.module, e.endpoint, e.page].filter(Boolean).join("/")
         return (
-          <div
+          <Flex
             key={e.id}
+            align="center"
+            gap={10}
             className="wb-hover-row"
-            style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 8px", minWidth: 0 }}
+            style={{ padding: "5px 8px", minWidth: 0 }}
           >
             <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.32)", flexShrink: 0 }}>
               {e.created_at.slice(5, 19)}
@@ -308,7 +310,7 @@ function EventFeed({ events }: { events: WbEvent[] }) {
                 {coord}
               </span>
             )}
-          </div>
+          </Flex>
         )
       })}
     </div>

@@ -1,5 +1,6 @@
 import Editor from "@monaco-editor/react"
-import { Alert, Button, Input, List, Modal, Radio, Skeleton, Space, Tag, Typography, message } from "antd"
+import { Alert, Button, Flex, Input, List, Modal, Radio, Skeleton, Space, Tag, Tooltip, Typography, message } from "antd"
+import { DesktopOutlined, MobileOutlined, TabletOutlined } from "@ant-design/icons"
 import mermaid from "mermaid"
 import { useEffect, useId, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
@@ -69,9 +70,9 @@ export function MarkdownView({ content }: { content: string }) {
 }
 
 const VIEWPORTS = [
-  { label: "375 (weapp/app)", value: 375 },
-  { label: "768", value: 768 },
-  { label: "1280 (admin/pc)", value: 1280 }
+  { icon: <MobileOutlined />, value: 375, tip: "375 · 手机 (weapp/app)" },
+  { icon: <TabletOutlined />, value: 768, tip: "768 · 平板" },
+  { icon: <DesktopOutlined />, value: 1280, tip: "1280 · 桌面 (admin/pc)" }
 ]
 
 function PrototypeView({ artifact }: { artifact: Artifact }) {
@@ -80,20 +81,20 @@ function PrototypeView({ artifact }: { artifact: Artifact }) {
     <div>
       <Radio.Group
         size="small"
-        options={VIEWPORTS.map(v => ({ label: v.label, value: v.value }))}
+        options={VIEWPORTS.map(v => ({ label: <Tooltip title={v.tip}>{v.icon}</Tooltip>, value: v.value }))}
         optionType="button"
         value={width}
         onChange={e => setWidth(e.target.value)}
         style={{ marginBottom: 12 }}
       />
-      <div style={{ background: SURFACE.raised, padding: 16, display: "flex", justifyContent: "center", borderRadius: 10 }}>
+      <Flex justify="center" style={{ background: SURFACE.raised, padding: 16, borderRadius: 10 }}>
         <iframe
           src={api.rawUrl(artifact.id)}
           sandbox="allow-scripts"
           style={{ width, height: "70vh", border: `1px solid ${SURFACE.lineStrong}`, borderRadius: 6, background: "#fff" }}
           title={artifact.path}
         />
-      </div>
+      </Flex>
     </div>
   )
 }
@@ -116,7 +117,7 @@ function CodeDirView({ artifact }: { artifact: Artifact }) {
   }, [artifact.id, selected])
 
   return (
-    <div style={{ display: "flex", gap: 12, height: "72vh" }}>
+    <Flex gap={12} style={{ height: "72vh" }}>
       <List
         size="small"
         split={false}
@@ -147,7 +148,7 @@ function CodeDirView({ artifact }: { artifact: Artifact }) {
           />
         )}
       </div>
-    </div>
+    </Flex>
   )
 }
 
