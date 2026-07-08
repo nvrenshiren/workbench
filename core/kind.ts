@@ -1,3 +1,4 @@
+import { resolvePlatforms } from "./platforms"
 import type { ArtifactKind, WorkbenchConfig } from "./types"
 
 // ─── kind 注册表(M0.5 结构定稿,M1 完成五处接线) ───────────────────────
@@ -53,13 +54,23 @@ export const DEFAULT_KIND_REGISTRY: Record<ArtifactKind, KindSpec> = {
   doc: { level: "module", approval: "none", parents: [], drivesStale: false, hashMode: "text-normalize", retrieval: "summary" }
 }
 
-/** 合并 config 覆盖后的注册表(项目层可改任意字段) */
+/** 合并 config 覆盖 + 平台元产物路径展开后的注册表(项目层可改任意字段) */
 export function getKindRegistry(config: WorkbenchConfig): Record<ArtifactKind, KindSpec> {
-  if (!config.kinds) return DEFAULT_KIND_REGISTRY
   const merged = { ...DEFAULT_KIND_REGISTRY }
-  for (const [kind, override] of Object.entries(config.kinds)) {
-    const base = merged[kind as ArtifactKind]
-    if (base) merged[kind as ArtifactKind] = { ...base, ...(override as Partial<KindSpec>) }
+  if (config.kinds) {
+    for (const [kind, override] of Object.entries(config.kinds)) {
+      const base = merged[kind as ArtifactKind]
+      if (base) merged[kind as ArtifactKind] = { ...base, ...(override as Partial<KindSpec>) }
+    }
+  }
+  // 元产物路径按目标平台动态展开:多平台同时生成时,各平台 agents/skills/hooks 目录都要能被识别
+  const adapters = resolvePlatforms(config.platforms)
+  const uniq = (xs: string[]) => [...new Set(xs)]
+  merged["agent-def"] = { ...merged["agent-def"], pathPatterns: uniq(adapters.map(a => `${a.agentsDir}/`)) }
+  merged.skill = { ...merged.skill, pathPatterns: uniq(adapters.map(a => `${a.skillsDir}/`)) }
+  merged["hook-script"] = {
+    ...merged["hook-script"],
+    pathPatterns: uniq(adapters.map(a => a.hooksScanDir).filter((d): d is string => !!d).map(d => `${d}/`))
   }
   return merged
 }

@@ -122,20 +122,37 @@ export function runInit(root: string, a: Record<string, any>): void {
     console.log(chalk.red("错误: 需要 --endpoints=service,admin,..."))
     process.exit(1)
   }
+  const platforms = a.platforms
+    ? String(a.platforms).split(",").map((s: string) => s.trim()).filter(Boolean)
+    : undefined
+  let model: string | Record<string, string> | undefined
+  if (a.model) {
+    const raw = String(a.model).trim()
+    model = raw.startsWith("{") ? JSON.parse(raw) : raw
+  }
   const r = initProject(root, {
     endpoints: String(a.endpoints).split(","),
     gitHooks: a.hooks !== "false",
-    preset: a.preset !== "false"
+    preset: a.preset !== "false",
+    platforms,
+    model,
+    writeHooks: a.writehooks !== "false"
   })
   const cli = r.ctx.config.cli
   console.log(chalk.green(`\n✅ 项目引导完成\n`))
   console.log(`  配置文件   ${r.configPath}`)
+  console.log(`  目标平台   ${r.platforms.join(", ")}`)
   console.log(`  文档骨架   ${r.scaffolded.length} 个目录`)
   console.log(`  预置文件   ${r.preset.length ? r.preset.join(", ") : "无(preset/ 为空或均已存在)"}`)
-  console.log(`  agent 定义 ${r.agents.length} 份(.claude/agents/)`)
+  console.log(`  agent 定义 ${r.agents.length} 份`)
   console.log(`  元产物注册 ${r.metaRegistered} 份(draft)`)
-  console.log(`  MCP        ${r.mcpPath ?? "未写(已存在)"}`)
+  console.log(`  MCP        ${r.mcpPaths.join(", ") || "未写"}`)
+  console.log(`  hooks 接线 ${r.hookPaths.join(", ") || "未写(--writehooks=false)"}`)
   console.log(`  git hooks  ${r.hooks.join(", ") || "未安装(非 git 仓库)"}`)
+  if (r.notes.length) {
+    console.log(chalk.yellow(`\n平台提醒:`))
+    for (const n of r.notes) console.log(chalk.yellow(`  • ${n}`))
+  }
   const wbDir = workbenchRelPath(root, "")
   console.log(chalk.bold(`\n下一步:`))
   console.log(`  1. 编辑 workbench.config.json 的 codeRoots(填每个端的代码目录约定)`)

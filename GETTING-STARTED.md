@@ -46,16 +46,18 @@ cd ..
 
 ### 3. 一键引导
 
-在**项目根**运行(声明你有哪些端):
+在**项目根**运行(选平台 + 声明你有哪些端):
 
 ```bash
-npx tsx workbench/cli.ts init --endpoints=service,admin,weapp,app
-# 纯后端项目:   --endpoints=service         (自动裁掉 designer;qa 保留)
-# 前后端:       --endpoints=service,web
+bash workbench/setup.sh                        # 交互:选平台(多选)+ 端 + 模型(models.dev)
+# 或直接指定:
+npx tsx workbench/cli.ts init --platforms=claude,cursor --endpoints=service,web
+# --platforms 缺省 claude(旧行为不变);纯后端 --endpoints=service 自动裁掉 designer(qa 保留)
 ```
 
-它会生成:`workbench.config.json`、`docs/` 骨架、`.claude/agents/*`(按你的端裁剪)、
-`.mcp.json`、git hooks、以及数据库 `.workbench/`。
+它会为**选中的每个平台**生成 agent 定义、注册 MCP、自动接线 hooks;并生成
+`workbench.config.json`、`docs/` 骨架、git hooks、数据库 `.workbench/`。
+各平台落地格式与注意点见 [PLATFORMS.md](./PLATFORMS.md)。
 
 > **预置文件部署**:`workbench/preset/` 下的所有文件(含 dotfiles / 子目录,保留相对结构)会一并
 > 部署到项目根——放你项目通用的脚手架(如 `.editorconfig`、`.prettierrc`、`.gitignore` 模板,以及
@@ -188,22 +190,23 @@ export                               # events/feedback 导出 jsonl(post-commit 
 
 ---
 
-## 七、接入 AI(Claude Code)
+## 七、接入 AI(多平台)
 
-`init` 已把三样东西就位,下个 Claude Code 会话自动生效:
+`init` 已为你选的每个平台(`--platforms`,缺省 claude)把三样东西就位,下个会话自动生效:
 
-1. **agent 定义**(`.claude/agents/*.md`):五个角色(PM/architect/designer/developer/qa),
-   路径由 kind 注册表注入、信任协议内置。**改目录约定 → 改 config → `gen-agents` 重生成**,
-   规则和路径永远单一真相源。
-2. **MCP**(`.mcp.json`):AI 通过 `wb_*` typed tools 操作(claim/output/submit/plan/qa…),
-   比敲 CLI 更稳。**审批 approve/reject 刻意不暴露给 AI——那是你的动作**。
-3. **hooks**(`.claude/settings.json` + git hooks):
+1. **agent 定义**:五个角色(PM/architect/designer/developer/qa),各平台落到各自目录与格式
+   (Claude `.claude/agents/*.md`、Codex `.codex/agents/*.toml`、OpenCode/Cursor `*.md`)。
+   路径由 kind 注册表注入、信任协议内置。**改目录约定 → 改 config → `gen-agents` 重生成**。
+2. **MCP**:AI 通过 `wb_*` typed tools 操作(claim/output/submit/plan/qa…),比敲 CLI 更稳。
+   **审批 approve/reject 刻意不暴露给 AI——那是你的动作**。写进各平台 MCP 配置(`.mcp.json` /
+   `.codex/config.toml` / `opencode.json` / `.cursor/mcp.json`)。
+3. **hooks**(各平台原生 hook + git hooks),init **自动接线**(合并不覆盖已有):
    - PostToolUse:AI 改文件后秒级刷新 hash(工作台即时变黄)
-   - PreToolUse:写闸门(observe 观察期,只记 `would_block` 事件不拦)
+   - PreToolUse:写闸门(默认 observe 观察期,只记 `would_block` 不拦;`enforce` 才拦)
    - post-commit:自动 sync + 孤儿提交检测
 
-> settings.json 的 hook 项 init 不会自动写(避免覆盖你的配置)。参考 workbench/README.md
-> 的 hooks 片段手动加进 `.claude/settings.json`。
+> hooks 自动接线默认开(observe),`init ... --writehooks=false` 可关。各平台 hook 配置文件、
+> Codex trust、Cursor 主 agent 模型等注意点见 [PLATFORMS.md](./PLATFORMS.md)。
 
 ---
 

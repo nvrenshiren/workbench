@@ -16,7 +16,7 @@
 - **反馈进化**:👍👎 与 QA verdict 半衰期加权提炼 → skill 候选 / Red Flags,草稿走人审;审批吞吐被度量
 - **协议 lint**:能机器查的约定降级为 gate 卡点
 - **可视化工作台**:树 + markdown/mermaid/原型/代码渲染 + 待审队列 diff + SSE 实时
-- **AI 接入**:5 个 agent 定义(模板生成)+ MCP typed tools + Claude Code hooks
+- **多平台接入**:一套模板生成 Claude Code / Codex / OpenCode / Cursor 各自的 agent + MCP + hooks(见 [PLATFORMS.md](./PLATFORMS.md))
 - **异构可移植**:纯后端项目自动裁掉 designer(qa 保留);零业务耦合(lint 强制)
 
 ## 快速开始
@@ -25,8 +25,9 @@
 # 1. 把 workbench/ 拷进你的项目,装依赖
 cd my-project/workbench && pnpm install && cd ..
 
-# 2. 一键引导(声明你的端)
-npx tsx workbench/cli.ts init --endpoints=service,admin,weapp,app
+# 2. 一键引导:选平台(多选)+ 端 + 模型(交互)
+bash workbench/setup.sh
+#    或直接指定:npx tsx workbench/cli.ts init --platforms=claude,cursor --endpoints=service,web
 
 # 3. 填 workbench.config.json 的 codeRoots,启动工作台(首次需先 build 前端)
 cd workbench && pnpm start          # 首次/前端改动后:build 前端 + 起 server → http://127.0.0.1:5620
@@ -35,24 +36,15 @@ cd workbench && pnpm start          # 首次/前端改动后:build 前端 + 起 
 
 **完整教程见 [GETTING-STARTED.md](./GETTING-STARTED.md)。**
 
-## Claude Code hooks 片段
+## 平台适配 & hooks
 
-`init` 不自动改你的 `.claude/settings.json`(避免覆盖)。手动加入:
+`init` 为选中的每个平台(`--platforms`,默认 `claude`)生成 agent 定义、注册 MCP、并**自动
+接线 hooks**——写门禁(改 approved 契约)+ 刷新(改文件重算 hash),默认 `observe` 只观测不拦截,
+`workbench.config.json` 的 `gates.writeGate` 切 `enforce` 才拦。合并语义:不覆盖你已有的配置。
 
-```jsonc
-{
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Write|Edit", "hooks": [
-        { "type": "command", "command": "npx tsx workbench/scripts/hook-pretooluse.ts", "timeout": 15 } ] }
-    ],
-    "PostToolUse": [
-      { "matcher": "Write|Edit", "hooks": [
-        { "type": "command", "command": "npx tsx workbench/scripts/hook-refresh.ts", "timeout": 15 } ] }
-    ]
-  }
-}
-```
+各平台落地格式(Claude `.claude/settings.json` / Codex `.codex/config.toml` / Cursor
+`.cursor/hooks.json` / OpenCode 插件)与注意点(Codex trust、Cursor 主 agent 模型)见
+**[PLATFORMS.md](./PLATFORMS.md)**。关闭自动接线:`init ... --writehooks=false`。
 
 ## 脚本
 

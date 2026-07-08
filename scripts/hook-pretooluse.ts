@@ -1,17 +1,17 @@
 /**
- * Claude Code PreToolUse hook:approved 契约写闸门。
+ * 多平台 PreToolUse hook:approved 契约写闸门。
  * 宪法第六条:新闸门先跑观察期——writeGate 三档:
  *   off     不检查
  *   observe 只记 would_block 事件(误拦判据的数据源,人工每周标注),永不拦截 ← 默认
- *   enforce 拦截(exit 2 + 可行动文案),观察期误拦率达标后由用户翻开
+ *   enforce 拦截(平台各自的拒绝出口),观察期误拦率达标后由用户翻开
+ * 平台由 --platform=<id> 指定;stdin/项目根按平台归一(见 hook-input）。
  */
+import { extractFilePath, hookPlatform, hookProjectDir, readStdinJson } from "./hook-input"
+
 async function main() {
-  const chunks: Buffer[] = []
-  for await (const chunk of process.stdin) chunks.push(chunk as Buffer)
-  const input = JSON.parse(Buffer.concat(chunks).toString("utf-8")) as {
-    tool_input?: { file_path?: string }
-  }
-  const filePath = input.tool_input?.file_path
+  const platform = hookPlatform()
+  const input = await readStdinJson()
+  const filePath = extractFilePath(input)
   if (!filePath) return
 
   const { openWorkbench } = await import("../core/db")
@@ -20,7 +20,7 @@ async function main() {
   const { contractKinds } = await import("../core/kind")
   const { logEvent } = await import("../core/events")
 
-  const ctx = openWorkbench(process.env.CLAUDE_PROJECT_DIR)
+  const ctx = openWorkbench(hookProjectDir())
   const mode = ctx.config.gates.writeGate
   if (mode === "off") return
 
@@ -46,7 +46,7 @@ async function main() {
     entityId: artifact.id,
     event: "would_block",
     actor: "write-gate",
-    payload: { path: rel, kind: artifact.kind, taskEnv: process.env.WORKBENCH_TASK_ID ?? null, mode },
+    payload: { path: rel, kind: artifact.kind, platform, taskEnv: process.env.WORKBENCH_TASK_ID ?? null, mode },
     module: artifact.module,
     endpoint: artifact.endpoint,
     page: artifact.page
@@ -54,11 +54,17 @@ async function main() {
 
   if (mode === "enforce") {
     // 可行动文案(裁决账本:必须告诉 agent 该领什么任务)
-    console.error(
+    const msg =
       `该文件是已审批契约(${artifact.kind}): ${rel}。\n` +
-        `修改前请先领取对应任务:${ctx.config.cli} list --module=${artifact.module ?? ""} --status=pending\n` +
-        `领取后设置环境变量 WORKBENCH_TASK_ID=<任务id> 再修改;若对内容本身有异议,用 dispute 命令留痕并停止。`
-    )
+      `修改前请先领取对应任务:${ctx.config.cli} list --module=${artifact.module ?? ""} --status=pending\n` +
+      `领取后设置环境变量 WORKBENCH_TASK_ID=<任务id> 再修改;若对内容本身有异议,用 dispute 命令留痕并停止。`
+    if (platform === "cursor") {
+      // Cursor:stdout 返回 JSON 决策
+      process.stdout.write(JSON.stringify({ permission: "deny", userMessage: msg, agentMessage: msg }))
+      process.exit(0)
+    }
+    // Claude / Codex / 其余:stderr + exit 2 阻断
+    console.error(msg)
     process.exit(2)
   }
 }

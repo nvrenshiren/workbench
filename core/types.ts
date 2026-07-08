@@ -116,6 +116,10 @@ export interface WorkbenchConfig {
   pipeline: Role[]
   /** 角色产出 kind(gate 上游选择器派生依据);designer 按任务形态在 core 内分流 */
   roleProduces: Record<string, ArtifactKind[]>
+  /** 目标 vibecode 平台(生成 agent/MCP/hooks 落地);默认 ["claude"] */
+  platforms: string[]
+  /** 各平台模型:字符串(全平台同款)或 {platform: model};缺省用各 adapter 默认 */
+  model?: string | Record<string, string>
 }
 
 /** 一切 core 操作的执行上下文:项目根 + 配置 + 打开的库 */

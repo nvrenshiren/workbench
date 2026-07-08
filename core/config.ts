@@ -20,7 +20,7 @@ export function workbenchRelPath(root: string, ...segments: string[]): string {
 }
 
 const DEFAULTS: WorkbenchConfig = {
-  endpoints: ["service", "web"],
+  endpoints: ["service", "admin", "weapp", "app"],
   docs: {
     prd: "docs/prd",
     architecture: "docs/architecture",
@@ -34,7 +34,7 @@ const DEFAULTS: WorkbenchConfig = {
   feedbackHalfLifeDays: 15,
   gates: { approvalMode: "warn", writeGate: "observe" },
   git: { taskTrailer: "off", trailerKey: "Task" },
-  legacyDb: ".workbench/legacy.db",
+  legacyDb: "tasks/task.db",
   dataDir: ".workbench",
   cli: "npx tsx workbench/cli.ts",
   pipeline: ["product-manager", "architect", "designer", "developer", "qa"],
@@ -51,7 +51,8 @@ const DEFAULTS: WorkbenchConfig = {
     designer: ["design-system", "design-prompt", "prototype"],
     developer: ["code"],
     qa: ["acceptance"]
-  }
+  },
+  platforms: ["claude"]
 }
 
 /** 自 from 向上寻找 workbench.config.json 所在目录;找不到则返回 from 本身 */
@@ -82,6 +83,7 @@ export function loadConfig(root: string): WorkbenchConfig {
     machineChecks: { ...DEFAULTS.machineChecks, ...raw.machineChecks },
     roleProduces: { ...DEFAULTS.roleProduces, ...raw.roleProduces },
     pipeline: raw.pipeline ?? DEFAULTS.pipeline,
-    git: { ...DEFAULTS.git, ...raw.git }
+    git: { ...DEFAULTS.git, ...raw.git },
+    platforms: raw.platforms ?? DEFAULTS.platforms
   }
 }

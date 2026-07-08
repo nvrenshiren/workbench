@@ -9,13 +9,14 @@ import {
 import { dirname, join } from "node:path"
 import { CONFIG_FILENAME, workbenchRelPath } from "../config"
 import { openWorkbenchAt } from "../db"
+import { type McpServer, resolvePlatforms } from "../platforms"
 import type { Ctx, Role } from "../types"
 import { genAgents } from "./gen-agents.command"
 import { installGitHooks } from "./install-hooks.command"
 import { registerMetaArtifacts } from "./meta.command"
 
 export interface InitOptions {
-  /** 项目有哪些端(有无前端端决定 designer 是否进流水线;qa 恒在) */
+  /** 项目有哪些端(前端端决定 designer/qa 是否进流水线) */
   endpoints: string[]
   /** 覆盖角色流水线;缺省按 endpoints 推断(纯后端 → 无 designer) */
   pipeline?: Role[]
@@ -25,10 +26,16 @@ export interface InitOptions {
   gitHooks?: boolean
   /** 是否脚手架 docs 目录骨架(默认 true) */
   scaffold?: boolean
-  /** 是否写 .mcp.json 让 Claude Code 自动挂载 MCP(默认 true) */
+  /** 是否写各平台 MCP 配置(默认 true) */
   mcp?: boolean
   /** 是否把 workbench/preset 下的预置文件部署到项目根(默认 true) */
   preset?: boolean
+  /** 目标平台(默认 ["claude"]);决定 agent/MCP/hooks 落地格式 */
+  platforms?: string[]
+  /** 各平台模型(字符串或 {platform: model});缺省用各 adapter 默认 */
+  model?: string | Record<string, string>
+  /** 是否自动接线各平台 hooks(写门禁 + 刷新,observe 模式;默认 true) */
+  writeHooks?: boolean
 }
 
 export interface InitResult {
@@ -38,7 +45,10 @@ export interface InitResult {
   metaRegistered: number
   hooks: string[]
   scaffolded: string[]
-  mcpPath: string | null
+  mcpPaths: string[]
+  hookPaths: string[]
+  platforms: string[]
+  notes: string[]
   preset: string[]
   /** 是否往根 package.json 补了 tsx devDep(补了则需 pnpm install 生效) */
   rootTsxAdded: boolean
@@ -145,7 +155,9 @@ export function initProject(root: string, opts: InitOptions): InitResult {
     moduleMapping: {},
     feedbackHalfLifeDays: 15,
     gates: { approvalMode: "warn", writeGate: "observe" },
-    git: { taskTrailer: "off", trailerKey: "Task" }
+    git: { taskTrailer: "off", trailerKey: "Task" },
+    platforms: opts.platforms && opts.platforms.length ? opts.platforms : ["claude"],
+    ...(opts.model ? { model: opts.model } : {})
   }
   writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n")
 
@@ -168,28 +180,28 @@ export function initProject(root: string, opts: InitOptions): InitResult {
   const { written } = genAgents(ctx)
   const meta = registerMetaArtifacts(ctx)
 
-  let mcpPath: string | null = null
-  if (opts.mcp !== false) {
-    const p = join(root, ".mcp.json")
-    if (!existsSync(p)) {
-      writeFileSync(
-        p,
-        JSON.stringify(
-          {
-            mcpServers: {
-              workbench: {
-                command: "npx",
-                args: ["tsx", workbenchRelPath(root, "server/mcp.ts")]
-              }
-            }
-          },
-          null,
-          2
-        ) + "\n"
-      )
-      mcpPath = ".mcp.json"
-    }
+  const adapters = resolvePlatforms(config.platforms)
+  const server: McpServer = {
+    name: "workbench",
+    command: "npx",
+    args: ["tsx", workbenchRelPath(root, "server/mcp.ts")]
   }
+  const mcpPaths: string[] = []
+  if (opts.mcp !== false) for (const a of adapters) mcpPaths.push(a.writeMcp(root, server))
+
+  const hookPaths: string[] = []
+  if (opts.writeHooks !== false) {
+    const preBase = `npx tsx ${workbenchRelPath(root, "scripts/hook-pretooluse.ts")}`
+    const postBase = `npx tsx ${workbenchRelPath(root, "scripts/hook-refresh.ts")}`
+    for (const a of adapters)
+      hookPaths.push(
+        ...a.writeHooks(root, {
+          preCommand: `${preBase} --platform=${a.id}`,
+          postCommand: `${postBase} --platform=${a.id}`
+        })
+      )
+  }
+  const notes = adapters.flatMap(a => a.notes)
 
   let hooks: string[] = []
   if (opts.gitHooks !== false && existsSync(join(root, ".git"))) {
@@ -207,7 +219,10 @@ export function initProject(root: string, opts: InitOptions): InitResult {
     metaRegistered: meta.registered.length,
     hooks,
     scaffolded,
-    mcpPath,
+    mcpPaths,
+    hookPaths,
+    platforms: config.platforms,
+    notes,
     preset,
     rootTsxAdded
   }

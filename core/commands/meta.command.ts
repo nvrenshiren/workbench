@@ -3,7 +3,8 @@ import { join } from "node:path"
 import { logEvent } from "../events"
 import { hashPath } from "../hash"
 import { inferKind } from "../kind"
-import type { ArtifactKind, Ctx } from "../types"
+import { resolvePlatforms } from "../platforms"
+import type { ArtifactKind, Ctx, WorkbenchConfig } from "../types"
 import { normalizeRelPath } from "./artifact.commands"
 
 /**
@@ -17,12 +18,30 @@ export interface RegisterMetaResult {
   skipped: string[]
 }
 
-const META_SOURCES: { dir: string; filter?: (name: string) => boolean; recursive?: boolean }[] = [
-  { dir: ".claude/agents", filter: n => n.endsWith(".md") },
-  { dir: ".claude/skills", filter: n => n === "SKILL.md", recursive: true },
-  { dir: ".claude/hooks", recursive: true },
-  { dir: "docs/workbench", filter: n => n === "PLAN.md" }
-]
+interface MetaSource {
+  dir: string
+  filter?: (name: string) => boolean
+  recursive?: boolean
+}
+
+/** 元产物扫描源:按目标平台展开(agent/skill/hook 目录各平台不同),末尾追加 plan */
+function metaSources(config: WorkbenchConfig): MetaSource[] {
+  const seen = new Set<string>()
+  const sources: MetaSource[] = []
+  const add = (s: MetaSource) => {
+    if (!seen.has(s.dir)) {
+      seen.add(s.dir)
+      sources.push(s)
+    }
+  }
+  for (const a of resolvePlatforms(config.platforms)) {
+    add({ dir: a.agentsDir, filter: n => n.endsWith(".md") || n.endsWith(".toml") })
+    add({ dir: a.skillsDir, filter: n => n === "SKILL.md", recursive: true })
+    if (a.hooksScanDir) add({ dir: a.hooksScanDir, recursive: true })
+  }
+  add({ dir: "docs/workbench", filter: n => n === "PLAN.md" })
+  return sources
+}
 
 function collectFiles(root: string, dir: string, filter?: (n: string) => boolean, recursive?: boolean): string[] {
   const abs = join(root, dir)
@@ -47,7 +66,7 @@ export function registerMetaArtifacts(ctx: Ctx, actor = "system"): RegisterMetaR
   const result: RegisterMetaResult = { registered: [], skipped: [] }
 
   const files: string[] = []
-  for (const src of META_SOURCES) {
+  for (const src of metaSources(ctx.config)) {
     files.push(...collectFiles(ctx.root, src.dir, src.filter, src.recursive))
   }
 
