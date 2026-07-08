@@ -28,7 +28,7 @@
 
 - **`output -- <路径>`** `--role --endpoint [--module --page --task]` —— 登记一个产物文件,自动关联你当前领取的任务。*场景:* 非代码类产物(PRD/契约/原型)写完后登记入 DAG。
 - **`artifacts`** `[--module --endpoint --page --kind]` —— 列产物及审批状态。*场景:* 查某模块有哪些契约、各自 draft/pending/approved。
-- **`scan`** `[--actor]` —— 全量扫描 docs + codeRoots 登记所有产物,按 kind 层级推导 DAG 边;代码目录级登记(不逐文件)。*场景:* 批量落地文件后一次入库;代码写完不用手动 `output`,scan 自动维护;git post-commit 也自动跑。
+- **`scan`** `[--actor]` —— 全量扫描 docs + codeRoots 登记所有产物,按 kind 层级推导 DAG 边;代码目录级登记(不逐文件)。改了 `moduleMapping` / `kinds` 覆盖等 config 后,**已登记行的坐标也随之收敛(重挂 `coords_remapped`,内容 hash 不变故审批不失效)**。*场景:* 批量落地文件后一次入库;代码写完不用手动 `output`,scan 自动维护;调整归并/kind 规则后重跑即收敛旧行;git post-commit 也自动跑。
 - **`move --from=<> --to=<>`** `--actor` —— 移动产物路径,保留 id 与审批状态(内容没变就不失效)。*场景:* 重构目录时避免审批断裂、下游误 stale。
 
 ## 信任(审批闭环)

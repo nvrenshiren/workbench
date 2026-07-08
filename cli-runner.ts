@@ -486,7 +486,7 @@ export async function runCommand(ctx: Ctx, command: string, a: Record<string, an
     }
     case "scan": {
       const s = scanArtifacts(ctx, a.actor || "system")
-      console.log(chalk.green(`✅ 扫描完成:新登记 ${s.registered},内容刷新 ${s.refreshed},新增边 ${s.edges},排除元产物 ${s.skipped.length}`))
+      console.log(chalk.green(`✅ 扫描完成:新登记 ${s.registered},内容刷新 ${s.refreshed},重挂坐标 ${s.remapped},新增边 ${s.edges},排除元产物 ${s.skipped.length}`))
       break
     }
     case "move": {

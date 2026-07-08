@@ -37,7 +37,7 @@
 - **`gates.writeGate`** `"off"|"observe"|"enforce"`(默认 `observe`)—— agent 改动已批契约时:`off` 不管;`observe` 只记 `would_block` 事件(用于观察误拦率),永不拦;`enforce` 真拦(需先领任务并设环境变量 `WORKBENCH_TASK_ID`,否则 exit 2)。*观察期数据达标后再翻 enforce。*
 - **`machineChecks`** `{ enabled, [端]: string[] }` —— developer `complete` 时按端跑的命令(如 `tsc --noEmit`);`enabled:false` 全局关。*接入你项目的类型检查 / 构建作为硬闸门。*
 - **`protocolLints`** `{name,grep,paths,endpoint?,role?,message?,allow?}[]` —— 把「能机器查的约定」降级为 lint:命中 `grep` 正则即违例,阻断对应 role/endpoint 的 `complete`;`allow` 列历史豁免文件。*例:禁硬编码分页 `pageSize`、禁 SQL enum 字面量。*
-- **`moduleMapping`** `Record<细, 粗>` —— 把细粒度模块名归并到粗模块(如 `userProfile` → `user`),统一坐标。
+- **`moduleMapping`** `Record<细, 粗>` —— 把细粒度模块名归并到粗模块(如 `userProfile` → `user`),统一坐标。*改动后重跑 `scan` 即把已登记行的坐标收敛到新映射(不影响审批)。*
 - **`git.taskTrailer`** `"off"|"on"`(默认 `off`)—— `on` 时提交注入 `Task:#<id>` 归因 trailer,并做多 agent 同分支的触碰交叉验证。
 - **`git.trailerKey`** `string`(默认 `Task`)—— trailer 的键名。
 - **`language`** `"zh"|"en"`(默认 `zh`)—— 生成 agent 的语言 + 工作台 UI 语言。

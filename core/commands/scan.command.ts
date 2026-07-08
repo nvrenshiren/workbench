@@ -9,6 +9,8 @@ import { refreshArtifact } from "./artifact.commands"
 export interface ScanSummary {
   registered: number
   refreshed: number
+  /** 坐标随 config 收敛(moduleMapping / kind 覆盖等)而重挂的行数 */
+  remapped: number
   edges: number
   skipped: string[]
 }
@@ -161,7 +163,7 @@ export function deriveEdges(ctx: Ctx): number {
  * 收尾统一推导 DAG 边。幂等。
  */
 export function scanArtifacts(ctx: Ctx, actor = "system"): ScanSummary {
-  const summary: ScanSummary = { registered: 0, refreshed: 0, edges: 0, skipped: [] }
+  const summary: ScanSummary = { registered: 0, refreshed: 0, remapped: 0, edges: 0, skipped: [] }
 
   const files: string[] = []
   for (const dir of Object.values(ctx.config.docs)) {
@@ -172,17 +174,55 @@ export function scanArtifacts(ctx: Ctx, actor = "system"): ScanSummary {
     if (existsSync(join(ctx.root, p))) files.push(p)
   }
 
-  const exists = ctx.db.prepare("SELECT id, content_hash FROM artifacts WHERE path = ?")
+  const exists = ctx.db.prepare(
+    "SELECT id, kind, module, endpoint, page, content_hash FROM artifacts WHERE path = ?"
+  )
+  const remap = ctx.db.prepare(
+    "UPDATE artifacts SET kind = ?, module = ?, endpoint = ?, page = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+  )
   const insert = ctx.db.prepare(
     "INSERT INTO artifacts (kind, module, endpoint, page, path, content_hash) VALUES (?, ?, ?, ?, ?, ?)"
   )
 
+  type ExistingRow = {
+    id: number
+    kind: ArtifactKind
+    module: string | null
+    endpoint: string | null
+    page: string | null
+    content_hash: string
+  }
+
   const registerOne = (relPath: string, kind: ArtifactKind, coords: Coords) => {
-    const row = exists.get(relPath) as { id: number; content_hash: string } | undefined
+    const row = exists.get(relPath) as ExistingRow | undefined
     if (row) {
       const before = row.content_hash
       const after = refreshArtifact(ctx, { id: row.id }, actor)
       if (after.content_hash !== before) summary.refreshed++
+
+      // 坐标随 config 收敛:path 不变但 moduleMapping / kind 覆盖等使 kind/坐标漂移时重挂。
+      // 内容 hash 不参与 → 审批锚点(approved_hash vs content_hash)不受影响。
+      if (row.kind !== kind || row.module !== coords.module || row.endpoint !== coords.endpoint || row.page !== coords.page) {
+        const tx = ctx.db.transaction(() => {
+          remap.run(kind, coords.module, coords.endpoint, coords.page, row.id)
+          logEvent(ctx.db, {
+            entityType: "artifact",
+            entityId: row.id,
+            event: "coords_remapped",
+            actor,
+            payload: {
+              path: relPath,
+              from: { kind: row.kind, module: row.module, endpoint: row.endpoint, page: row.page },
+              to: { kind, module: coords.module, endpoint: coords.endpoint, page: coords.page }
+            },
+            module: coords.module,
+            endpoint: coords.endpoint,
+            page: coords.page
+          })
+        })
+        tx()
+        summary.remapped++
+      }
       return
     }
     const hash = hashPath(join(ctx.root, relPath))

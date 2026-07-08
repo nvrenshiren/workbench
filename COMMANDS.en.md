@@ -28,7 +28,7 @@ Every command: `opcflow <command> [args]` (after a global install; or `npx -y @d
 
 - **`output -- <path>`** `--role --endpoint [--module --page --task]` —— register an output file, auto-linking your currently claimed task. *When:* after writing a non-code artifact (PRD/contract/prototype), register it into the DAG.
 - **`artifacts`** `[--module --endpoint --page --kind]` —— list artifacts with approval status. *When:* see a module's contracts and whether each is draft/pending/approved.
-- **`scan`** `[--actor]` —— full scan of docs + codeRoots to register every artifact and derive DAG edges by kind tier; code is registered at directory level (not per file). *When:* bulk-land files then register in one shot; you never hand-`output` code — scan maintains it; git post-commit runs it too.
+- **`scan`** `[--actor]` —— full scan of docs + codeRoots to register every artifact and derive DAG edges by kind tier; code is registered at directory level (not per file). After changing config like `moduleMapping` / `kinds` overrides, **already-registered rows' coordinates converge too (remapped via `coords_remapped`; the content hash is untouched so approval survives)**. *When:* bulk-land files then register in one shot; you never hand-`output` code — scan maintains it; re-run after tweaking merge/kind rules to converge old rows; git post-commit runs it too.
 - **`move --from=<> --to=<>`** `--actor` —— move an artifact's path, keeping its id and approval (unchanged content stays approved). *When:* restructuring directories without breaking approval or falsely staling downstream.
 
 ## Trust (approval loop)

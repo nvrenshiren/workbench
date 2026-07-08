@@ -37,7 +37,7 @@ Fields fall into two groups: **frequently tuned** and **rarely touched (advanced
 - **`gates.writeGate`** `"off"|"observe"|"enforce"` (default `observe`) —— when an agent edits an approved contract: `off` ignores; `observe` only logs a `would_block` event (to observe the false-block rate), never blocks; `enforce` actually blocks (you must claim a task and set env `WORKBENCH_TASK_ID`, else exit 2). *Flip to enforce once observe-period data is acceptable.*
 - **`machineChecks`** `{ enabled, [endpoint]: string[] }` —— commands run per endpoint on developer `complete` (e.g. `tsc --noEmit`); `enabled:false` disables globally. *Wire in your project's type-check / build as a hard gate.*
 - **`protocolLints`** `{name,grep,paths,endpoint?,role?,message?,allow?}[]` —— demote machine-checkable conventions to lints: a `grep` regex match is a violation and blocks `complete` for the matching role/endpoint; `allow` lists grandfathered files. *e.g. forbid hardcoded `pageSize` pagination, or SQL enum literals.*
-- **`moduleMapping`** `Record<fine, coarse>` —— merge fine-grained module names into coarse ones (e.g. `userProfile` → `user`) to unify coordinates.
+- **`moduleMapping`** `Record<fine, coarse>` —— merge fine-grained module names into coarse ones (e.g. `userProfile` → `user`) to unify coordinates. *After changing it, re-run `scan` to converge already-registered rows to the new mapping (approval unaffected).*
 - **`git.taskTrailer`** `"off"|"on"` (default `off`) —— when `on`, inject a `Task:#<id>` attribution trailer on commit and cross-verify touched files across agents on the same branch.
 - **`git.trailerKey`** `string` (default `Task`) —— the trailer key name.
 - **`language`** `"zh"|"en"` (default `zh`) —— agent generation language + workbench UI language.

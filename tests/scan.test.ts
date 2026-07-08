@@ -9,6 +9,7 @@ import {
   claimTask,
   createTask,
   listArtifacts,
+  listEvents,
   moveArtifact,
   openWorkbenchAt,
   refreshArtifact,
@@ -149,5 +150,46 @@ describe("move / input 命令", () => {
     const st = taskStaleness(ctx.db, id)
     assert.equal(st.stale, true)
     assert.ok(st.changed.some(c => c.path.includes("systems/admin.md")))
+  })
+})
+
+describe("scan:坐标随 config 收敛(remap)", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-remap-"))
+  writeFileSync(join(root, "workbench.config.json"), "{}") // 初始无 moduleMapping
+  mkdirSync(join(root, "docs/prd/modules"), { recursive: true })
+  writeFileSync(join(root, "docs/prd/modules/landType.md"), "# landType 模块 PRD")
+  const ctx = openWorkbenchAt(root)
+  const REL = "docs/prd/modules/landType.md"
+  const getRow = () => ctx.db.prepare("SELECT * FROM artifacts WHERE path = ?").get(REL) as any
+  after(() => {
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("事后加入 moduleMapping → 旧行重挂粗模块,审批不失效,幂等", () => {
+    scanArtifacts(ctx)
+    assert.equal(getRow().module, "landType") // 未映射,原样登记
+
+    // 先审批,验证重挂不打回已批契约
+    approveArtifact(ctx, { path: REL }, "user")
+    assert.equal(reviewStatus(getRow()), "approved")
+
+    // 事后加入归并规则,重扫
+    ctx.config.moduleMapping = { landType: "land" }
+    const s = scanArtifacts(ctx)
+    assert.equal(s.remapped, 1)
+
+    const row = getRow()
+    assert.equal(row.module, "land") // 坐标已收敛到粗模块
+    assert.equal(reviewStatus(row), "approved") // 内容 hash 未变 → 审批存活
+
+    const ev = listEvents(ctx.db, { entityType: "artifact", entityId: row.id, event: "coords_remapped" })
+    assert.equal(ev.length, 1)
+    const payload = JSON.parse(ev[0].payload!)
+    assert.equal(payload.from.module, "landType")
+    assert.equal(payload.to.module, "land")
+
+    // 幂等:坐标已相等 → 不再重挂
+    assert.equal(scanArtifacts(ctx).remapped, 0)
   })
 })
