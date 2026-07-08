@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 隔离检查
+        run: pnpm run check:isolation
+
+      - name: 类型检查
+        run: pnpm run typecheck
+
+      - name: 测试
+        run: pnpm test
+
+      - name: 构建
+        run: pnpm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            dist
+            web/dist
+          if-no-files-found: error
+          retention-days: 7
