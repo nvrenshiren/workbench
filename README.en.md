@@ -61,12 +61,17 @@ from contract to code to acceptance.**
 
 ## Installation
 
-opcflow is an npm package — it **does not drop source into your project**. Bootstrap from your
-project root with npx, zero install:
+opcflow is an npm package — it **does not drop source into your project**. Install it once globally to
+get the `opcflow` command:
 
 ```bash
-# In your project root: pick platforms (multi-select) + endpoints, generate in one shot
-npx -y @dawipong/opcflow init --platforms=claude,cursor --endpoints=service,web
+pnpm i -g @dawipong/opcflow      # or npm i -g @dawipong/opcflow
+```
+
+Bootstrap from your project root (no args → interactive: pick platforms / endpoints / model; or pass flags):
+
+```bash
+opcflow init --platforms=claude,cursor --endpoints=service,web
 #   backend-only:  --endpoints=service          (auto-prunes designer, qa kept)
 #   set models:    --model='{"codex":"gpt-5.1-codex"}'  or  --model=<single string> (defaults per platform)
 ```
@@ -85,13 +90,13 @@ Requires Node ≥ 22.
 1. **Fill in code-dir conventions** — edit `codeRoots` in `workbench.config.json` (each endpoint's code dir, `{module}` placeholder).
 2. **Start the opcflow** (visual approval panel, connects to the project's `.workbench`):
    ```bash
-   npx -y @dawipong/opcflow serve       # → http://127.0.0.1:5620 (--project sets the root, defaults to cwd)
+   opcflow serve       # → http://127.0.0.1:5620 (--project sets the root, defaults to cwd)
    ```
 3. **Give the AI your first requirement** (one sentence). It runs the five-role pipeline, producing contracts layer by layer and submitting them for review.
 4. **Nod in the review queue** — view diffs in the opcflow; approve / reject; thumbs-up prototypes.
 5. **Once all contracts are approved, dispatch:**
    ```bash
-   npx -y @dawipong/opcflow plan --module=<module>   # dispatch architect/designer/developer/qa tasks
+   opcflow plan --module=<module>   # dispatch architect/designer/developer/qa tasks
    ```
 
 Every later change is tracked: edit an approved contract → auto-invalidate → downstream stale → a
@@ -136,7 +141,7 @@ never silently deviate.
 
 ## CLI Commands & Parameters
 
-Every command: `npx -y @dawipong/opcflow <command> [args]`. Global `--project=<path>` sets the project
+Every command: `opcflow <command> [args]` (after global install; or `npx -y @dawipong/opcflow <command>` without installing). Global `--project=<path>` sets the project
 root (otherwise it searches upward for `workbench.config.json`). File-path arguments are separated with
 `--` (e.g. `submit --actor=x -- <path>`).
 
@@ -227,7 +232,7 @@ root (otherwise it searches upward for `workbench.config.json`). File-path argum
 
 ## Visual opcflow
 
-`npx -y @dawipong/opcflow serve` serves at `http://127.0.0.1:5620`: the artifact tree (colors update live), markdown /
+`opcflow serve` serves at `http://127.0.0.1:5620`: the artifact tree (colors update live), markdown /
 mermaid / HTML-prototype iframe / code rendering, the **review-queue diff** (approved version vs.
 current), an event timeline, and live SSE refresh. Approve, reject, and thumbs-up/down prototypes right
 here.
