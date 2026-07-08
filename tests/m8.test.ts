@@ -46,7 +46,7 @@ describe("M8 反馈加权提炼(半衰期 × actor 权重 × 分桶)", () => {
   const groupOf = (groups: ReturnType<typeof distillFeedback>, endpoint: string) =>
     groups.find(g => g.endpoint === endpoint && g.kind === "code")!
 
-  it("3 个人工正例 → skill-candidate;2 个人工负例 → red-flag;混杂 → observation(mixed)", () => {
+  it("3 个人工正例 → candidate;2 个人工负例 → red-flag;混杂 → observation(mixed)", () => {
     // service/code:3 个人工 +1(不同产物)
     for (let i = 1; i <= 3; i++) {
       insertFeedback(insertArtifact("code", "service", `m${i}`, `service/src/m${i}`), 1, "user", FRESH)
@@ -62,7 +62,7 @@ describe("M8 反馈加权提炼(半衰期 × actor 权重 × 分桶)", () => {
 
     const groups = distillFeedback(ctx, { now: NOW })
     const service = groupOf(groups, "service")
-    assert.equal(service.bucket, "skill-candidate")
+    assert.equal(service.bucket, "candidate")
     assert.equal(service.posScore, 3)
 
     const admin = groupOf(groups, "admin")
@@ -78,7 +78,7 @@ describe("M8 反馈加权提炼(半衰期 × actor 权重 × 分桶)", () => {
     assert.equal(weappGroup.reason, "mixed")
 
     // 排序:候选在前,红旗次之
-    assert.equal(groups[0].bucket, "skill-candidate")
+    assert.equal(groups[0].bucket, "candidate")
     assert.equal(groups[1].bucket, "red-flag")
   })
 
@@ -216,5 +216,46 @@ describe("M8 skill 草稿人审流 + retrospective 报告 + 事件导出", () =>
     const second = exportEventLog(ctx)
     assert.deepEqual(second, first)
     assert.ok(existsSync(join(root, ".workbench/feedback.jsonl")))
+  })
+})
+
+describe("M8 提炼阈值可配(config 覆盖默认 3/2,未配回落)", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-m8-thr-"))
+  writeFileSync(join(root, "workbench.config.json"), JSON.stringify({ candidateThreshold: 2, redFlagThreshold: 1 }))
+  const ctx: Ctx = openWorkbenchAt(root)
+  after(() => {
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  const artifact = (endpoint: string, path: string) =>
+    ctx.db
+      .prepare("INSERT INTO artifacts (kind, module, endpoint, page, path, content_hash) VALUES ('code', 'm', ?, NULL, ?, 'h0')")
+      .run(endpoint, path).lastInsertRowid as number
+  const fb = (id: number, verdict: 1 | -1, comment: string | null = null) =>
+    ctx.db
+      .prepare("INSERT INTO artifact_feedback (artifact_id, verdict, comment, content_hash, actor, created_at) VALUES (?, ?, ?, 'h0', 'user', ?)")
+      .run(id, verdict, comment, FRESH)
+
+  it("config 覆盖:2 正例 → candidate(阈值 2);1 负例 → red-flag(阈值 1)", () => {
+    fb(artifact("service", "service/a"), 1)
+    fb(artifact("service", "service/b"), 1)
+    fb(artifact("admin", "admin/a"), -1, "边界漏判")
+
+    const groups = distillFeedback(ctx, { now: NOW })
+    const svc = groups.find(g => g.endpoint === "service")!
+    assert.equal(svc.posScore, 2)
+    assert.equal(svc.bucket, "candidate") // 默认阈值 3 下会是 insufficient
+    const adm = groups.find(g => g.endpoint === "admin")!
+    assert.equal(adm.negScore, 1)
+    assert.equal(adm.bucket, "red-flag") // 默认阈值 2 下会是 insufficient
+  })
+
+  it("未配回落默认:清空阈值后同样数据都不达标", () => {
+    ctx.config.candidateThreshold = undefined
+    ctx.config.redFlagThreshold = undefined
+    const groups = distillFeedback(ctx, { now: NOW })
+    assert.equal(groups.find(g => g.endpoint === "service")!.bucket, "observation")
+    assert.equal(groups.find(g => g.endpoint === "admin")!.bucket, "observation")
   })
 })

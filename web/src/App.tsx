@@ -87,8 +87,8 @@ export default function App() {
       if (prevSkill.current >= 0 && n > prevSkill.current) {
         message.info(
           t(
-            `反馈提炼出 ${r.candidates} 个 skill 候选 / ${r.redFlags} 个 red-flag,见「经验提炼」`,
-            `Distilled ${r.candidates} skill candidate(s) / ${r.redFlags} red-flag(s) — see "Distill"`
+            `反馈提炼出 ${r.candidates} 个经验候选 / ${r.redFlags} 个 red-flag,见「经验提炼」`,
+            `Distilled ${r.candidates} candidate(s) / ${r.redFlags} red-flag(s) — see "Distill"`
           )
         )
       }

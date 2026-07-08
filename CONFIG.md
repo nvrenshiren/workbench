@@ -43,6 +43,8 @@
 - **`language`** `"zh"|"en"`(默认 `zh`)—— 生成 agent 的语言 + 工作台 UI 语言。
 - **`model`** `string | Record<平台, model>` —— 各平台模型:字符串=全平台同款,对象=按平台指定,缺省用各 adapter 默认。
 - **`feedbackHalfLifeDays`** `number`(默认 `15`)—— 反馈权重半衰期天数;`retro`/distill 用,越旧的 👍👎 权重越低。
+- **`candidateThreshold`** `number`(默认 `3`)—— 加权正分 ≥ 此值 → 经验候选(提示 AI 判断沉淀为 skill / 规则 / 记忆)。调低更爱提候选,调高更保守。
+- **`redFlagThreshold`** `number`(默认 `2`)—— 加权负分 ≥ 此值 → Red Flag。同理调节灵敏度。
 
 ## 基本不动(进阶)
 

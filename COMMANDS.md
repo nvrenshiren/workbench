@@ -53,7 +53,7 @@
 
 ## 进化 / 维护
 
-- **`retro`** `[--module --json]` —— 复盘:半衰期加权的 skill 候选 / Red Flags / 审批吞吐。*场景:* 阶段性回顾,把反复正例提炼成 skill、负例列成红旗。
+- **`retro`** `[--module --json]` —— 复盘:半衰期加权的经验候选 / Red Flags / 审批吞吐(阈值 `candidateThreshold` / `redFlagThreshold` 可配,缺省 3 / 2)。*场景:* 阶段性回顾;把候选证据交给 AI 判断该沉淀为 **skill / 规则 / 记忆** 中的哪一种,负例同样三分流(能机器查→规则、通用坑→skill 的 Red Flags、角色专属坑→记忆)。
 - **`export`** —— 把 events / feedback 全量导出为 jsonl(落 `.workbench/`)。*场景:* 离线分析、备份;post-commit 自动跑。
 - **`init`** `--endpoints [--platforms --model --language --hooks=false --preset=false --writehooks=false]` —— 空项目引导(在终端裸跑进交互问答)。*场景:* 新项目一次性落地 agent/MCP/hooks/config/docs 骨架。
 - **`gen-agents`** —— 从模板重新生成各平台 agent 定义。*场景:* 改了 config(端/平台/codeRoots)或升级模板后刷新 agent。

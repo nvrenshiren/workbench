@@ -186,11 +186,11 @@ export async function createServer(ctx: Ctx): Promise<FastifyInstance> {
       }))
   })
 
-  // 反馈进化:加权提炼出的 skill 候选 / red-flag 组(确定性,复用 retro.command)
+  // 反馈进化:加权提炼出的经验候选 / red-flag 组(确定性,复用 retro.command)
   app.get("/api/skill-candidates", async () => {
     const report = runRetrospective(ctx)
     return {
-      groups: report.groups.filter(g => g.bucket === "skill-candidate" || g.bucket === "red-flag"),
+      groups: report.groups.filter(g => g.bucket === "candidate" || g.bucket === "red-flag"),
       candidates: report.candidates,
       redFlags: report.redFlags,
       halfLifeDays: report.halfLifeDays,

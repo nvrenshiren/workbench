@@ -106,6 +106,10 @@ export interface WorkbenchConfig {
   }[]
   moduleMapping: Record<string, string>
   feedbackHalfLifeDays: number
+  /** 提炼阈值(缺省 3):加权正分 ≥ 此值 → 经验候选 */
+  candidateThreshold?: number
+  /** 提炼阈值(缺省 2):加权负分 ≥ 此值 → Red Flag */
+  redFlagThreshold?: number
   gates: { approvalMode: "warn" | "enforce"; writeGate: "off" | "observe" | "enforce" }
   /** git 集成:trailer 交叉验证默认 off(裁决账本:用户过目后生效) */
   git: { taskTrailer: "off" | "on"; trailerKey: string }

@@ -43,6 +43,8 @@ Fields fall into two groups: **frequently tuned** and **rarely touched (advanced
 - **`language`** `"zh"|"en"` (default `zh`) —— agent generation language + workbench UI language.
 - **`model`** `string | Record<platform, model>` —— per-platform model: a string = same for all platforms, an object = per platform, otherwise each adapter's default.
 - **`feedbackHalfLifeDays`** `number` (default `15`) —— feedback weight half-life in days; used by `retro`/distill — older 👍👎 weigh less.
+- **`candidateThreshold`** `number` (default `3`) —— weighted positive score ≥ this → a candidate (prompts the AI to decide skill / rule / memory). Lower = more eager to surface candidates, higher = more conservative.
+- **`redFlagThreshold`** `number` (default `2`) —— weighted negative score ≥ this → a Red Flag. Same knob for sensitivity.
 
 ## Rarely touched (advanced)
 

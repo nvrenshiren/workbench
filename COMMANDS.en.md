@@ -53,7 +53,7 @@ Every command: `opcflow <command> [args]` (after a global install; or `npx -y @d
 
 ## Evolution / Maintenance
 
-- **`retro`** `[--module --json]` —— retrospective: half-life-weighted skill candidates / Red Flags / approval throughput. *When:* periodic review — distill recurring positives into skills, list negatives as red flags.
+- **`retro`** `[--module --json]` —— retrospective: half-life-weighted candidates / Red Flags / approval throughput (thresholds `candidateThreshold` / `redFlagThreshold` configurable, default 3 / 2). *When:* periodic review — hand the candidate evidence to the AI to decide whether it becomes a **skill / rule / memory**; negatives split the same way (machine-checkable → rule, general pitfall → the skill's Red Flags, role-specific → memory).
 - **`export`** —— export all events / feedback as jsonl (into `.workbench/`). *When:* offline analysis, backup; runs on post-commit.
 - **`init`** `--endpoints [--platforms --model --language --hooks=false --preset=false --writehooks=false]` —— bootstrap an empty project (run bare in a terminal for interactive prompts). *When:* land agent/MCP/hooks/config/docs scaffolding for a new project in one go.
 - **`gen-agents`** —— regenerate each platform's agent definitions from templates. *When:* after changing config (endpoints/platforms/codeRoots) or upgrading templates.

@@ -4,13 +4,14 @@ import type { Ctx } from "../types"
 
 // ─── 进化机制:反馈加权提炼 + 审批吞吐报表 + 事件导出 ───────────────────
 //
-// 本命令层是**确定性聚合**:只把 artifact_feedback / events 铸成证据包;把证据写成 skill
-// 草稿是 AI 的活,草稿注册为 kind=skill 元产物(register-meta)→ submit → 用户人审,approved
-// 才生效——智能永远夹在两道确定性之间。
+// 本命令层是**确定性聚合**:只把 artifact_feedback / events 铸成证据包。把证据沉淀成什么
+// 形态由 AI 判断——skill(可复用做法)/ 规则(硬约束→protocolLints)/ 记忆(角色专属教训
+// →agent-memory);其中 skill 走 register-meta → submit → 用户人审,approved 才生效。
+// 智能永远夹在两道确定性之间。
 
-/** 加权正例分 ≥ 3 → skill 草稿候选 */
-export const SKILL_CANDIDATE_THRESHOLD = 3
-/** 加权负例分 ≥ 2 → Red Flags */
+/** 加权正例分 ≥ 此值 → 经验候选(形态由 AI 三选一);config.candidateThreshold 未配时的默认 */
+export const CANDIDATE_THRESHOLD = 3
+/** 加权负例分 ≥ 此值 → Red Flags;config.redFlagThreshold 未配时的默认 */
 export const RED_FLAG_THRESHOLD = 2
 /**
  * 自动 verdict 权重(actor 以 -auto 结尾,如 qa-auto):
@@ -36,7 +37,7 @@ export interface FeedbackEvidence {
   createdAt: string
 }
 
-export type DistillBucket = "skill-candidate" | "red-flag" | "observation"
+export type DistillBucket = "candidate" | "red-flag" | "observation"
 
 export interface DistillGroup {
   /** 分组键:endpoint(NULL 归 common)+ kind */
@@ -71,15 +72,17 @@ interface FeedbackJoinRow {
 /**
  * 反馈加权提炼(纯读、确定性):
  * weight = actor 权重 × 0.5^(距今天数 / feedbackHalfLifeDays)。
- * 按 (endpoint, kind) 聚合正负分后分桶:
- *   正分 ≥ 3 且负分 < 2 → skill-candidate
- *   负分 ≥ 2 且正分 < 3 → red-flag
+ * 按 (endpoint, kind) 聚合正负分后分桶(阈值可配,缺省 3 / 2):
+ *   正分 ≥ candidateThreshold 且负分 < redFlagThreshold → candidate
+ *   负分 ≥ redFlagThreshold 且正分 < candidateThreshold → red-flag
  *   两侧都达阈值        → observation(mixed,信号矛盾,人看)
  *   其余                → observation(insufficient,继续积累)
  */
 export function distillFeedback(ctx: Ctx, opts: DistillOptions = {}): DistillGroup[] {
   const now = (opts.now ?? new Date()).getTime()
   const halfLifeMs = ctx.config.feedbackHalfLifeDays * 24 * 60 * 60 * 1000
+  const candidateThreshold = ctx.config.candidateThreshold ?? CANDIDATE_THRESHOLD
+  const redFlagThreshold = ctx.config.redFlagThreshold ?? RED_FLAG_THRESHOLD
 
   let query = `
     SELECT f.artifact_id, f.verdict, f.comment, f.actor, f.created_at,
@@ -123,13 +126,13 @@ export function distillFeedback(ctx: Ctx, opts: DistillOptions = {}): DistillGro
   for (const g of result) {
     g.posScore = Math.round(g.posScore * 100) / 100
     g.negScore = Math.round(g.negScore * 100) / 100
-    const pos = g.posScore >= SKILL_CANDIDATE_THRESHOLD
-    const neg = g.negScore >= RED_FLAG_THRESHOLD
+    const pos = g.posScore >= candidateThreshold
+    const neg = g.negScore >= redFlagThreshold
     if (pos && neg) {
       g.bucket = "observation"
       g.reason = "mixed"
     } else if (pos) {
-      g.bucket = "skill-candidate"
+      g.bucket = "candidate"
     } else if (neg) {
       g.bucket = "red-flag"
     } else {
@@ -138,7 +141,7 @@ export function distillFeedback(ctx: Ctx, opts: DistillOptions = {}): DistillGro
     }
   }
   // 输出顺序确定:候选在前、红旗次之,组内按键名
-  const order: Record<DistillBucket, number> = { "skill-candidate": 0, "red-flag": 1, observation: 2 }
+  const order: Record<DistillBucket, number> = { candidate: 0, "red-flag": 1, observation: 2 }
   return result.sort((a, b) => order[a.bucket] - order[b.bucket] || `${a.endpoint}/${a.kind}`.localeCompare(`${b.endpoint}/${b.kind}`))
 }
 
@@ -230,28 +233,30 @@ export interface RetroReport {
   candidates: number
   redFlags: number
   approval: ApprovalStats
-  /** 给 AI 的下一步指引(skill 草稿人审流) */
+  /** 给 AI 的下一步指引(判断沉淀为 skill / 规则 / 记忆,并按各自路径产出) */
   guidance: string[]
 }
 
 /** retrospective 流程:提炼 + 吞吐报表 + 人审流指引,一次出全 */
 export function runRetrospective(ctx: Ctx, opts: DistillOptions = {}): RetroReport {
   const groups = distillFeedback(ctx, opts)
-  const candidates = groups.filter(g => g.bucket === "skill-candidate").length
+  const candidates = groups.filter(g => g.bucket === "candidate").length
   const redFlags = groups.filter(g => g.bucket === "red-flag").length
   const cli = ctx.config.cli
 
   const guidance: string[] = []
   if (candidates > 0) {
     guidance.push(
-      `发现 ${candidates} 个 skill 候选组:依据其 evidence(路径+comment)起草 .claude/skills/<名称>/SKILL.md,` +
-        `然后 \`${cli} register-meta\` 注册 + \`${cli} submit --actor=<角色> -- .claude/skills/<名称>/SKILL.md\` 送人审;approved 后才作为经验生效`
+      `发现 ${candidates} 个经验候选组:对每组依据 evidence(路径+comment)判断该沉淀为哪一种,再按对应路径产出——` +
+        `跨会话可复用的做法/流程 → skill(.claude/skills/<名称>/SKILL.md;\`${cli} register-meta\` 注册 + \`${cli} submit --actor=<角色> -- <路径>\` 送人审,approved 才生效);` +
+        `必须始终成立、可 grep 的硬约束 → 规则(workbench.config.json 的 protocolLints 卡点,或写入 TECH.md / 基线约定);` +
+        `只对特定角色/项目有用、不值得单独成篇的教训或偏好 → 记忆(.claude/agent-memory/<角色>/,更新 MEMORY.md 索引)`
     )
   }
   if (redFlags > 0) {
     guidance.push(
-      `发现 ${redFlags} 个 Red Flags 组:负例 comment 即素材,写入对应 skill 草稿的 Red Flags 章节;` +
-        `能机器查的约定应降级为 protocolLints 卡点(workbench.config.json)`
+      `发现 ${redFlags} 个 Red Flags 组:负例 comment 即「别再犯」的素材,同样三选一——` +
+        `能机器查 → protocolLints 卡点;跨会话通用坑 → 写进对应 skill 的 Red Flags 章节;角色专属坑 → 记忆`
     )
   }
   if (guidance.length === 0) {

@@ -4,12 +4,12 @@ import { api, type DistillGroup, type SkillCandidatesReport } from "./api"
 import { MONO, SURFACE } from "./ui"
 import { t } from "./i18n"
 
-/** 把一组证据 + guidance 组装成给 AI 的起草指令(复制到剪贴板,人带进 Claude 会话起草) */
+/** 把一组证据 + guidance 组装成给 AI 的沉淀指令(复制到剪贴板,人带进 Claude 会话) */
 function buildDraftPrompt(g: DistillGroup, guidance: string[]): string {
   const lines: string[] = [
     t(
-      "依据以下 opcflow 反馈证据,起草一份 skill(.claude/skills/<名称>/SKILL.md):",
-      "Based on the following opcflow feedback evidence, draft a skill (.claude/skills/<name>/SKILL.md):"
+      "依据以下 opcflow 反馈证据,先判断这条经验最适合沉淀为 skill / 规则 / 记忆中的哪一种,再按对应路径产出:",
+      "Based on the following opcflow feedback evidence, first decide whether this experience is best captured as a skill / rule / memory, then produce it via the matching route:"
     ),
     "",
     t(
@@ -29,16 +29,22 @@ function buildDraftPrompt(g: DistillGroup, guidance: string[]): string {
   }
   lines.push(
     "",
-    t("起草要求:", "Drafting requirements:"),
-    t("- skill-candidate:把正例共性提炼成「正确做法」;", "- skill-candidate: distill the shared traits of the positive cases into a “correct practice”;"),
-    t("- red-flag:把负例 comment 写进「Red Flags」章节;", "- red-flag: write the negative-case comments into the “Red Flags” section;"),
+    t("三选一(按判据挑,再产出):", "Pick one (by these criteria), then produce:"),
     t(
-      "- 能机器查的约定,建议降级为 workbench.config.json 的 protocolLints 卡点;",
-      "- for machine-checkable conventions, prefer downgrading them to protocolLints gates in workbench.config.json;"
+      "- skill —— 跨会话可复用的做法/流程:写 .claude/skills/<名称>/SKILL.md,再 `register-meta` 注册 + `submit --actor=<角色>` 送人审,approved 才生效;",
+      "- skill — a reusable practice/procedure across sessions: write .claude/skills/<name>/SKILL.md, then `register-meta` + `submit --actor=<role>` for human review; effective once approved;"
     ),
     t(
-      "- 起草后 `register-meta` 注册 + `submit --actor=<角色>` 送人审,approved 才生效。",
-      "- after drafting, register with `register-meta` + `submit --actor=<role>` for human review; only takes effect once approved."
+      "- 规则(rule)—— 必须始终成立、能机器查的硬约束:降级为 workbench.config.json 的 protocolLints 卡点(或写入 TECH.md / 基线约定);",
+      "- rule — a hard, machine-checkable constraint that must always hold: downgrade it to a protocolLints gate in workbench.config.json (or write it into TECH.md / the baseline);"
+    ),
+    t(
+      "- 记忆(memory)—— 只对该角色/项目有用、不值得单独成篇的教训或偏好:写 .claude/agent-memory/<角色>/,更新 MEMORY.md 索引;",
+      "- memory — a role/project-specific lesson or preference not worth a whole skill: write .claude/agent-memory/<role>/ and update the MEMORY.md index;"
+    ),
+    t(
+      "- 负例(-1)的 comment 是「别再犯」的素材:能机器查→规则,跨会话通用坑→写进 skill 的 Red Flags,角色专属坑→记忆。",
+      "- negative (-1) comments are “don't repeat this” material: machine-checkable → rule, general cross-session pitfall → the skill's Red Flags section, role-specific pitfall → memory."
     )
   )
   if (guidance.length) {
@@ -69,7 +75,7 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
   const copyDraft = async (g: DistillGroup) => {
     try {
       await navigator.clipboard.writeText(buildDraftPrompt(g, report?.guidance ?? []))
-      message.success(t("起草指令已复制,粘贴到 Claude Code 会话即可起草 skill", "Draft instruction copied — paste it into a Claude Code session to draft the skill"))
+      message.success(t("沉淀指令已复制,粘贴到 Claude Code 会话即可判断并沉淀为 skill/规则/记忆", "Distill instruction copied — paste it into a Claude Code session to classify and capture as skill/rule/memory"))
     } catch {
       message.error(t("复制失败(剪贴板权限?),可手动选中证据文本", "Copy failed (clipboard permission?) — you can select the evidence text manually"))
     }
@@ -78,7 +84,7 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
   const groups = report?.groups ?? []
 
   const BUCKET = {
-    "skill-candidate": { color: "green", label: t("skill 候选", "Skill candidate") },
+    candidate: { color: "green", label: t("经验候选", "Candidate") },
     "red-flag": { color: "red", label: "red-flag" },
     observation: { color: "default", label: t("观察", "Observation") }
   } as const
@@ -94,8 +100,8 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
           <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
             {report
               ? t(
-                  `${report.candidates} 个 skill 候选 · ${report.redFlags} 个 red-flag · 半衰期 ${report.halfLifeDays} 天`,
-                  `${report.candidates} skill candidate(s) · ${report.redFlags} red-flag(s) · half-life ${report.halfLifeDays} day(s)`
+                  `${report.candidates} 个经验候选 · ${report.redFlags} 个 red-flag · 半衰期 ${report.halfLifeDays} 天`,
+                  `${report.candidates} candidate(s) · ${report.redFlags} red-flag(s) · half-life ${report.halfLifeDays} day(s)`
                 )
               : ""}
           </Typography.Text>
@@ -104,7 +110,7 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
       destroyOnHidden
     >
       {groups.length === 0 ? (
-        <Empty description={t("暂无达阈值的 skill 候选 / red-flag(继续积累 👍👎 与 QA 反馈)", "No skill candidates / red-flags above threshold yet (keep gathering 👍👎 and QA feedback)")} />
+        <Empty description={t("暂无达阈值的经验候选 / red-flag(继续积累 👍👎 与 QA 反馈)", "No candidates / red-flags above threshold yet (keep gathering 👍👎 and QA feedback)")} />
       ) : (
         <Flex gap={16} style={{ height: "100%" }}>
           <div style={{ width: 300, overflow: "auto", paddingRight: 4, flexShrink: 0 }}>
@@ -156,7 +162,7 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
               <>
                 <Space style={{ marginBottom: 12, flexShrink: 0 }}>
                   <Button type="primary" onClick={() => copyDraft(active)}>
-                    {t("复制起草指令", "Copy draft instruction")}
+                    {t("复制沉淀指令", "Copy distill instruction")}
                   </Button>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {BUCKET[active.bucket].label} · {t(`正 ${active.posScore} / 负 ${active.negScore}`, `+${active.posScore} / -${active.negScore}`)}
@@ -168,8 +174,8 @@ export function SkillCandidates({ open, onClose }: { open: boolean; onClose: () 
                   style={{ marginBottom: 12 }}
                   message={
                     active.bucket === "red-flag"
-                      ? t("负例达阈值:把这些 comment 提炼进 skill 的 Red Flags 章节", "Negative cases above threshold: distill these comments into the skill's Red Flags section")
-                      : t("正例达阈值:把共性提炼成 skill 的正确做法。起草 → 人审 approved 才生效", "Positive cases above threshold: distill the shared traits into the skill's correct practice. Draft → human review; only takes effect once approved")
+                      ? t("负例达阈值:按判据沉淀——能机器查→规则(protocolLints),通用坑→skill 的 Red Flags,角色专属坑→记忆", "Negative cases above threshold: capture by criteria — machine-checkable → rule (protocolLints), general pitfall → the skill's Red Flags, role-specific pitfall → memory")
+                      : t("正例达阈值:判断沉淀为 skill / 规则 / 记忆之一,再按对应路径产出(skill 需人审 approved 才生效)", "Positive cases above threshold: decide skill / rule / memory, then produce via the matching route (skills take effect once approved)")
                   }
                 />
                 <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>

@@ -33,7 +33,7 @@ contracts, thumbs-up/down outputs, and answer rulings**.
 - **Change propagation** — `sync` reconciles → invalidate → dispatch review along the graph (deduped)
 - **QA loop** — fail → auto rework → auto re-verify, no human in the loop
 - **Write-gate hooks** — block agents from editing an approved contract (observe mode by default)
-- **Feedback evolution** — 👍👎 and QA verdicts, half-life weighted → skill candidates / Red Flags
+- **Feedback evolution** — 👍👎 and QA verdicts, half-life weighted → candidates (AI decides skill / rule / memory) / Red Flags
 - **Multi-platform** — one definition generates each platform's agent + MCP + hooks (see [PLATFORMS.md](PLATFORMS.md))
 - **Visual opcflow** — tree + markdown/mermaid/prototype/code rendering + review-queue diff + live SSE
 
@@ -55,7 +55,7 @@ complementary:
 | Roles | Essentially single-flow (one agent implements) | Five-role pipeline, each with its own gate and output channel |
 | Construction constraints | The spec is advisory | Gates block tasks whose upstream isn't approved; write-gate blocks edits to approved contracts; protocol lints as checkpoints |
 | Acceptance | Not covered | Two-stage QA + fail→rework→re-verify auto loop |
-| Evolution | Not covered | 👍👎/verdict half-life weighting → skill candidates / Red Flags |
+| Evolution | Not covered | 👍👎/verdict half-life weighting → candidates (skill/rule/memory) / Red Flags |
 
 In one line: **Spec Kit treats the spec as "context for the agent"; opcflow treats it as "an
 approved contract that can go stale, propagate, and block construction," and governs the entire drift

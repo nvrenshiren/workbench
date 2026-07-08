@@ -146,8 +146,9 @@ export function buildMcpServer(ctx: Ctx): McpServer {
     "wb_retro",
     {
       description:
-        "retrospective 证据包:反馈半衰期加权提炼(skill 候选/Red Flags/观察)+ 审批吞吐报表。" +
-        "依据 evidence 起草 .claude/skills/<名称>/SKILL.md 后 register-meta + submit 送人审,approved 才生效",
+        "retrospective 证据包:反馈半衰期加权提炼(经验候选/Red Flags/观察)+ 审批吞吐报表。" +
+        "依据 evidence 判断每组该沉淀为哪一种再产出:可复用做法→skill(.claude/skills/<名称>/SKILL.md,register-meta+submit 送人审,approved 才生效);" +
+        "能机器查的硬约束→规则(workbench.config.json 的 protocolLints);角色专属教训→记忆(.claude/agent-memory/<角色>/)。见 report.guidance",
       inputSchema: { module: z.string().optional() }
     },
     async args => json(runRetrospective(ctx, args))

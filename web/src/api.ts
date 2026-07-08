@@ -98,7 +98,7 @@ export interface DistillGroup {
   kind: string
   posScore: number
   negScore: number
-  bucket: "skill-candidate" | "red-flag" | "observation"
+  bucket: "candidate" | "red-flag" | "observation"
   reason?: "mixed" | "insufficient"
   evidence: FeedbackEvidence[]
 }
