@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/nvrenshiren/opcflow/compare/v0.2.0...v0.2.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* scan 收敛已登记行的坐标(moduleMapping/kind 漂移),不再需要删库重建 ([a10841a](https://github.com/nvrenshiren/opcflow/commit/a10841a6e10250b5cf164c0066f7dd883cb93b53))
+
 # [0.2.0](https://github.com/nvrenshiren/opcflow/compare/v0.1.1...v0.2.0) (2026-07-08)
 
 
