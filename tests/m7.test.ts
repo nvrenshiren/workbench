@@ -85,6 +85,27 @@ describe("init:根 package.json 补 tsx devDep", () => {
   })
 })
 
+describe("init:裸项目从 preset 落地最小 package.json(含 tsx)", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-pkg-"))
+  let ctx: Ctx
+  after(() => {
+    ctx?.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("无 package.json → preset 部署含 tsx 的最小 package.json,ensureRootTsx 不再重复补", () => {
+    assert.equal(existsSync(join(root, "package.json")), false)
+    const r = initProject(root, { endpoints: ["service"], gitHooks: false, mcp: false })
+    ctx = r.ctx
+    assert.equal(existsSync(join(root, "package.json")), true)
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"))
+    assert.equal(pkg.devDependencies.tsx, "^4")
+    assert.equal(pkg.private, true)
+    assert.equal(r.rootTsxAdded, false) // preset 已带 tsx,无需再补
+    assert.ok(r.preset.includes("package.json"))
+  })
+})
+
 describe("M7 MCP 端点(InMemoryTransport 全握手)", () => {
   const root = mkdtempSync(join(tmpdir(), "wb-mcp-"))
   writeFileSync(join(root, "workbench.config.json"), "{}")

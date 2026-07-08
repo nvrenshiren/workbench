@@ -58,8 +58,10 @@ npx tsx workbench/cli.ts init --endpoints=service,admin,weapp,app
 `.mcp.json`、git hooks、以及数据库 `.workbench/`。
 
 > **预置文件部署**:`workbench/preset/` 下的所有文件(含 dotfiles / 子目录,保留相对结构)会一并
-> 部署到项目根——放你项目通用的脚手架(如 `.editorconfig`、`.prettierrc`、`.gitignore` 模板等)。
-> 与其余步骤一致的**幂等防覆盖**:项目根已存在同名文件则跳过,不动你已有的。`--preset=false` 可关。
+> 部署到项目根——放你项目通用的脚手架(如 `.editorconfig`、`.prettierrc`、`.gitignore` 模板,以及
+> 一个最小 `package.json`——含 `tsx`,让裸项目开箱即可 `npx tsx` 跑 workbench)。
+> 与其余步骤一致的**幂等防覆盖**:项目根已存在同名文件则跳过,不动你已有的(已有 `package.json`
+> 但缺 `tsx` 时,init 会单独补上 `tsx` devDep,不覆盖你的文件)。`--preset=false` 可关。
 
 ### 4. 填代码目录约定,启动工作台
 
