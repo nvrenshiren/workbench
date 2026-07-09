@@ -297,3 +297,45 @@ describe("deriveEdges 对账:残留 derived 边清理,manual 边永不动", () =
     assert.equal(c, 0)
   })
 })
+
+describe("scan 重命名检测:同 hash 唯一候选自动跟随(保 id 保审批)", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-rename-"))
+  writeFileSync(join(root, "workbench.config.json"), "{}")
+  mkdirSync(join(root, "docs/prd/modules"), { recursive: true })
+  writeFileSync(join(root, "docs/prd/modules/land.md"), "# land PRD v1")
+  const ctx = openWorkbenchAt(root)
+  after(() => {
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("重命名文件 → 同 id、新路径、审批存活、auto_moved 留痕", () => {
+    scanArtifacts(ctx)
+    const before = ctx.db.prepare("SELECT * FROM artifacts WHERE path = 'docs/prd/modules/land.md'").get() as any
+    approveArtifact(ctx, { id: before.id }, "user")
+
+    renameSync(join(ctx.root, "docs/prd/modules/land.md"), join(ctx.root, "docs/prd/modules/estate.md"))
+    const s = scanArtifacts(ctx)
+    assert.equal(s.moved, 1)
+    assert.equal(s.registered, 0) // 是跟随,不是新登记
+
+    const moved = ctx.db.prepare("SELECT * FROM artifacts WHERE id = ?").get(before.id) as any
+    assert.equal(moved.path, "docs/prd/modules/estate.md")
+    assert.equal(moved.module, "estate") // 坐标随新路径重解析
+    assert.equal(reviewStatus(moved), "approved") // hash 未变 → 审批存活
+    assert.equal(listEvents(ctx.db, { entityType: "artifact", entityId: before.id, event: "auto_moved" }).length, 1)
+  })
+
+  it("歧义(两个消失的同 hash 候选)→ 保守回退为新登记,不乱认", () => {
+    mkdirSync(join(ctx.root, "docs/prd/flows"), { recursive: true })
+    writeFileSync(join(ctx.root, "docs/prd/flows/a.md"), "same content")
+    writeFileSync(join(ctx.root, "docs/prd/flows/b.md"), "same content")
+    scanArtifacts(ctx)
+    rmSync(join(ctx.root, "docs/prd/flows/a.md"))
+    rmSync(join(ctx.root, "docs/prd/flows/b.md"))
+    writeFileSync(join(ctx.root, "docs/prd/flows/c.md"), "same content")
+    const s = scanArtifacts(ctx)
+    assert.equal(s.moved, 0) // 两个候选,不认
+    assert.equal(s.registered, 1) // c.md 走正常新登记
+  })
+})

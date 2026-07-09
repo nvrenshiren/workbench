@@ -278,6 +278,33 @@ export function scanArtifacts(ctx: Ctx, actor = "system"): ScanSummary {
     }
     const hash = hashPath(join(ctx.root, relPath))
     if (hash === null) return
+
+    // 重命名/移动检测:同 hash、同 kind、原路径已消失的唯一候选 → 按 move 跟随(保 id,
+    // 审批锚点 approved_hash vs content_hash 不受影响;边是 id 基的,关系自动存活)。
+    // 候选不唯一(空文件/模板复制)或 kind 不同(跨文档根移动)→ 保守回退为新登记。
+    const movedFrom = (ctx.db.prepare("SELECT * FROM artifacts WHERE content_hash = ? AND kind = ?").all(hash, kind) as ArtifactRow[])
+      .filter(a => !existsSync(join(ctx.root, a.path)))
+    if (movedFrom.length === 1) {
+      const old = movedFrom[0]
+      const tx = ctx.db.transaction(() => {
+        ctx.db
+          .prepare("UPDATE artifacts SET path = ?, module = ?, endpoint = ?, page = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .run(relPath, coords.module, coords.endpoint, coords.page, old.id)
+        logEvent(ctx.db, {
+          entityType: "artifact",
+          entityId: old.id,
+          event: "auto_moved",
+          actor,
+          payload: { from: old.path, to: relPath },
+          module: coords.module,
+          endpoint: coords.endpoint,
+          page: coords.page
+        })
+      })
+      tx()
+      summary.moved++
+      return
+    }
     const tx = ctx.db.transaction(() => {
       const result = insert.run(kind, coords.module, coords.endpoint, coords.page, relPath, hash)
       logEvent(ctx.db, {
