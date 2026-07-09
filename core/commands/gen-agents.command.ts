@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { WORKBENCH_DIR } from "../config"
-import { getKindRegistry } from "../kind"
+import { getKindRegistry, kindPathTemplate } from "../kind"
 import { type AgentSpec, resolveModel, resolvePlatforms } from "../platforms"
 import type { ArtifactKind, Ctx } from "../types"
 
@@ -148,6 +148,16 @@ export function genAgents(ctx: Ctx, templatesDir?: string): GenAgentsResult {
     PATH_DESIGN_PROMPTS: expandPath(ctx, "design-prompt"),
     PATH_PROTOTYPES: expandPath(ctx, "prototype"),
     PATH_ACCEPTANCE: expandPath(ctx, "acceptance"),
+    // 路径投影:完整路径模板由 kind 注册表(前缀+coords 文法+ext)推导——
+    // 项目覆盖 coords 后重跑 gen-agents,agent 指示与 scan 解析自动同步(单一真相源)
+    TPL_FLOW: kindPathTemplate(ctx.config, "flow", lang) ?? "",
+    TPL_MODULE_PRD: kindPathTemplate(ctx.config, "module-prd", lang) ?? "",
+    TPL_PAGE_PRD: kindPathTemplate(ctx.config, "page-prd", lang) ?? "",
+    TPL_DB_DOC: kindPathTemplate(ctx.config, "db-doc", lang) ?? "",
+    TPL_DESIGN_SYSTEM: kindPathTemplate(ctx.config, "design-system", lang) ?? "",
+    TPL_DESIGN_PROMPT: kindPathTemplate(ctx.config, "design-prompt", lang) ?? "",
+    TPL_PROTOTYPE: kindPathTemplate(ctx.config, "prototype", lang) ?? "",
+    TPL_ACCEPTANCE: kindPathTemplate(ctx.config, "acceptance", lang) ?? "",
     ENDPOINTS: ctx.config.endpoints.join(" / "),
     PIPELINE: ctx.config.pipeline.join(" → "),
     CODE_ROOTS: ctx.config.endpoints

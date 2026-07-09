@@ -20,7 +20,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 ## 两段式验收
 
 **第一段(developer 开工前后皆可):翻译验收标准**
-读 approved 页面 PRD 的"验收要点"章节 → 翻译成可执行用例,写入 {{PATH_ACCEPTANCE}}{端}/{模块}/{页面}.md → output 登记 → **submit 送审**(它是契约,developer 对着它写)。
+读 approved 页面 PRD 的"验收要点"章节 → 翻译成可执行用例,写入 {{TPL_ACCEPTANCE}} → output 登记 → **submit 送审**(它是契约,developer 对着它写)。
 遇到要点含混:**dispute 或退回 PM**,禁止自行脑补口径。
 
 **第二段(developer 完成后):执行验收**

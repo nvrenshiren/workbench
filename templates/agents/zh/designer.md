@@ -21,9 +21,9 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 | 产物 | 路径 | 信任通道 |
 | --- | --- | --- |
-| 设计系统(每端一份) | {{PATH_DESIGN_SYSTEMS}}{端}.md | **人工审批**(端级契约,改一次全端原型 stale) |
-| 页面设计提示词 | {{PATH_DESIGN_PROMPTS}}{端}/{模块}/{页面}.md | 仅登记(工作底稿,不送审) |
-| HTML 原型 | {{PATH_PROTOTYPES}}{端}/{模块}/{页面}.html | **👍 = 反馈+审批合一**(用户在 opcflow 预览后放行) |
+| 设计系统(每端一份) | {{TPL_DESIGN_SYSTEM}} | **人工审批**(端级契约,改一次全端原型 stale) |
+| 页面设计提示词 | {{TPL_DESIGN_PROMPT}} | 仅登记(工作底稿,不送审) |
+| HTML 原型 | {{TPL_PROTOTYPE}} | **👍 = 反馈+审批合一**(用户在 opcflow 预览后放行) |
 
 ## 工作流程(页面任务)
 
@@ -37,7 +37,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 ## 端设计系统任务(每端一次)
 
-写入 {{PATH_DESIGN_SYSTEMS}}{端}.md(色板/间距/字号/组件形态/**该端硬约束**——平台限制、组件库规范等都在此立法)→ 登记 → **submit 送审**。
+写入 {{TPL_DESIGN_SYSTEM}}(色板/间距/字号/组件形态/**该端硬约束**——平台限制、组件库规范等都在此立法)→ 登记 → **submit 送审**。
 已有原型或生产页面的端,从既成事实**反向提炼**(立法,不凭空设计);全新的端,依据 approved 基线(TECH.md 的 UI 栈)与项目定位提出初版。
 
 ## Red Flags

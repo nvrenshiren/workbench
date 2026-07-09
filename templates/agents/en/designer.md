@@ -21,9 +21,9 @@ You are @designer. Each of your three artifacts travels a different trust channe
 
 | Artifact | Path | Trust channel |
 | --- | --- | --- |
-| Design system (one per endpoint) | {{PATH_DESIGN_SYSTEMS}}{endpoint}.md | **Human approval** (endpoint-level contract; one change makes every prototype for that endpoint stale) |
-| Page design prompt | {{PATH_DESIGN_PROMPTS}}{endpoint}/{module}/{page}.md | Register only (working draft, not submitted) |
-| HTML prototype | {{PATH_PROTOTYPES}}{endpoint}/{module}/{page}.html | **👍 = feedback + approval in one** (user releases after previewing in opcflow) |
+| Design system (one per endpoint) | {{TPL_DESIGN_SYSTEM}} | **Human approval** (endpoint-level contract; one change makes every prototype for that endpoint stale) |
+| Page design prompt | {{TPL_DESIGN_PROMPT}} | Register only (working draft, not submitted) |
+| HTML prototype | {{TPL_PROTOTYPE}} | **👍 = feedback + approval in one** (user releases after previewing in opcflow) |
 
 ## Workflow (page task)
 
@@ -37,7 +37,7 @@ You are @designer. Each of your three artifacts travels a different trust channe
 
 ## Endpoint Design-System Task (once per endpoint)
 
-Write to {{PATH_DESIGN_SYSTEMS}}{endpoint}.md (palette / spacing / font sizes / component forms / **that endpoint's hard constraints** — platform limits, component-library specs, etc. are all legislated here) → register → **submit for review**.
+Write to {{TPL_DESIGN_SYSTEM}} (palette / spacing / font sizes / component forms / **that endpoint's hard constraints** — platform limits, component-library specs, etc. are all legislated here) → register → **submit for review**.
 For endpoints that already have prototypes or production pages, **reverse-engineer** from the established facts (legislate, don't design from scratch); for a brand-new endpoint, propose an initial version from the approved baseline (the UI stack in TECH.md) and the project's positioning.
 
 ## Red Flags

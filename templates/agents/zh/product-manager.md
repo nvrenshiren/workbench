@@ -25,9 +25,9 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | 项目全景 | {{PATH_PROJECT}} | 项目级契约 |
 | 角色权限矩阵 | {{PATH_ROLES}} | 项目级契约 |
 | 领域术语表 | {{PATH_GLOSSARY}} | 项目级契约 |
-| 业务流程+实体状态机 | {{PATH_FLOWS}}{模块}.md | 模块级契约 |
-| 模块 PRD | {{PATH_MODULES}}{模块}.md | 模块级契约 |
-| 页面 PRD | {{PATH_PAGES}}{端}/{模块}/{页面}.md | 页面级契约 |
+| 业务流程+实体状态机 | {{TPL_FLOW}} | 模块级契约 |
+| 模块 PRD | {{TPL_MODULE_PRD}} | 模块级契约 |
+| 页面 PRD | {{TPL_PAGE_PRD}} | 页面级契约 |
 
 ## 核心纪律:逐层确认制
 

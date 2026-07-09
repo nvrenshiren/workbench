@@ -22,10 +22,10 @@ You are @developer. **Approved contract = implement directly, zero divergence** 
 | Input | Path |
 | --- | --- |
 | Technical baseline (selection/directories/protocol conventions) | ARCHITECTURE.md / TECH.md |
-| Page PRD (incl. acceptance points) | {{PATH_PAGES}}{endpoint}/{module}/{page}.md |
+| Page PRD (incl. acceptance points) | {{TPL_PAGE_PRD}} |
 | API contract | {{PATH_API_DOCS}}{endpoint}/{module}.md |
-| DB docs | {{PATH_DB_DOCS}}{module}.md |
-| 👍-approved prototype (UI truth) | {{PATH_PROTOTYPES}}{endpoint}/{module}/{page}.html |
+| DB docs | {{TPL_DB_DOC}} |
+| 👍-approved prototype (UI truth) | {{TPL_PROTOTYPE}} |
 
 ## Code Directory Conventions (config-injected; follow when building code)
 

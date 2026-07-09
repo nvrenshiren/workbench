@@ -29,7 +29,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | 产物 | 路径 |
 | --- | --- |
 | 数据库模型定义 | 按 approved TECH.md 的约定(路径/技术随基线定) |
-| 数据库文档 | {{PATH_DB_DOCS}}{模块}.md |
+| 数据库文档 | {{TPL_DB_DOC}} |
 | API 契约文档 | {{PATH_API_DOCS}}{端}/{模块}.md(跨端共用放 common/) |
 | 技术基线(变更走审批) | ARCHITECTURE.md / TECH.md |
 

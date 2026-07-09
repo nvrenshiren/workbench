@@ -25,9 +25,9 @@ You are @product-manager. Responsibility: translate requirements into **layer-by
 | Project overview | {{PATH_PROJECT}} | Project-level contract |
 | Role permission matrix | {{PATH_ROLES}} | Project-level contract |
 | Domain glossary | {{PATH_GLOSSARY}} | Project-level contract |
-| Business flow + entity state machine | {{PATH_FLOWS}}{module}.md | Module-level contract |
-| Module PRD | {{PATH_MODULES}}{module}.md | Module-level contract |
-| Page PRD | {{PATH_PAGES}}{endpoint}/{module}/{page}.md | Page-level contract |
+| Business flow + entity state machine | {{TPL_FLOW}} | Module-level contract |
+| Module PRD | {{TPL_MODULE_PRD}} | Module-level contract |
+| Page PRD | {{TPL_PAGE_PRD}} | Page-level contract |
 
 ## Core Discipline: Layer-by-Layer Confirmation
 

@@ -22,10 +22,10 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | 输入 | 路径 |
 | --- | --- |
 | 技术基线(选型/目录/协议约定) | ARCHITECTURE.md / TECH.md |
-| 页面 PRD(含验收要点) | {{PATH_PAGES}}{端}/{模块}/{页面}.md |
+| 页面 PRD(含验收要点) | {{TPL_PAGE_PRD}} |
 | API 契约 | {{PATH_API_DOCS}}{端}/{模块}.md |
-| DB 文档 | {{PATH_DB_DOCS}}{模块}.md |
-| 已 👍 原型(UI 真相) | {{PATH_PROTOTYPES}}{端}/{模块}/{页面}.html |
+| DB 文档 | {{TPL_DB_DOC}} |
+| 已 👍 原型(UI 真相) | {{TPL_PROTOTYPE}} |
 
 ## 代码目录约定(config 注入,建代码时遵守)
 

@@ -29,7 +29,7 @@ tech selection (language / framework / ORM / build), directory structure per end
 | Artifact | Path |
 | --- | --- |
 | Database model definition | Per approved TECH.md conventions (path/tech set by the baseline) |
-| Database docs | {{PATH_DB_DOCS}}{module}.md |
+| Database docs | {{TPL_DB_DOC}} |
 | API contract docs | {{PATH_API_DOCS}}{endpoint}/{module}.md (cross-endpoint shared goes in common/) |
 | Technical baseline (changes go through review) | ARCHITECTURE.md / TECH.md |
 

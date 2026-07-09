@@ -1,5 +1,5 @@
 import { resolvePlatforms } from "./platforms"
-import type { ArtifactKind, WorkbenchConfig } from "./types"
+import type { ArtifactKind, Language, WorkbenchConfig } from "./types"
 
 // ─── kind 注册表 ───────────────────────
 
@@ -37,6 +37,8 @@ export interface KindSpec {
   coords?: string
   /** coords 未捕获 {endpoint} 时的固定端(如 db-doc=common、api-doc=service) */
   defaultEndpoint?: string
+  /** 该 kind 产物的文件扩展名(缺省 md;prototype=html)——路径投影 kindPathTemplate 用 */
+  ext?: string
   /** 元产物:业务树默认过滤,scan 排除(走显式 register-meta) */
   meta?: boolean
 }
@@ -59,7 +61,7 @@ export const DEFAULT_KIND_REGISTRY: Record<ArtifactKind, KindSpec> = {
   "api-doc": { level: "module", approval: "human", parents: ["module-prd", "db-doc"], drivesStale: true, hashMode: "text-normalize", retrieval: "full", pathPatterns: ["{architecture}/api/"], coords: "{module}", defaultEndpoint: "service" },
   "design-system": { level: "endpoint", approval: "human", parents: ["baseline"], drivesStale: true, hashMode: "text-normalize", retrieval: "full", pathPatterns: ["{design}/systems/"], coords: "{endpoint}" },
   "design-prompt": { level: "page", approval: "none", parents: ["page-prd", "api-doc", "design-system"], drivesStale: false, hashMode: "text-normalize", retrieval: "summary", pathPatterns: ["{design}/prompts/"], coords: "{endpoint}/{module}/{page}" },
-  prototype: { level: "page", approval: "thumbs", parents: ["design-prompt", "design-system"], drivesStale: true, hashMode: "text-normalize", retrieval: "summary", pathPatterns: ["{design}/prototypes/"], coords: "{endpoint}/{module}/{page}" },
+  prototype: { level: "page", approval: "thumbs", parents: ["design-prompt", "design-system"], drivesStale: true, hashMode: "text-normalize", retrieval: "summary", pathPatterns: ["{design}/prototypes/"], coords: "{endpoint}/{module}/{page}", ext: "html" },
   acceptance: { level: "page", approval: "human", parents: ["page-prd", "prototype"], drivesStale: true, hashMode: "text-normalize", retrieval: "full", pathPatterns: ["{acceptance}/"], coords: "{endpoint}/{module}/{page}" },
   code: { level: "module", approval: "machine", parents: ["baseline", "api-doc", "prototype"], drivesStale: false, hashMode: "directory", retrieval: "semantic" },
   doc: { level: "module", approval: "none", parents: [], drivesStale: false, hashMode: "text-normalize", retrieval: "summary" }
@@ -122,6 +124,26 @@ export function expandPattern(pattern: string, config: WorkbenchConfig): string 
     .replace("{architecture}", config.docs.architecture)
     .replace("{design}", config.docs.design)
     .replace("{acceptance}", config.docs.acceptance)
+}
+
+/** 坐标占位符的本地化(zh 模板用中文占位;en 保持原样) */
+const COORD_LABELS_ZH: Record<string, string> = { "{module}": "{模块}", "{endpoint}": "{端}", "{page}": "{页面}" }
+
+/**
+ * 路径投影:由 kind 的 pathPatterns[0] 前缀 + coords 文法 + ext 渲染完整路径模板,
+ * 注入 agent 指示(gen-agents 的 TPL_* token)——与 scan 的坐标解析共享同一真相源,
+ * 项目覆盖 coords 后 agent 指示自动同步,不再出现"agent 按旧约定写、scan 按新文法拒收"。
+ * 无 coords 文法(baseline/code 等)返回 null。
+ * 已知例外:api-doc 的文法是叶子文件名(容忍任意中间目录),表达不了「{端}/ 子目录」惯例,
+ * 其模板路径仍由模板散文手写。
+ */
+export function kindPathTemplate(config: WorkbenchConfig, kind: ArtifactKind, lang: Language): string | null {
+  const spec = getKindRegistry(config)[kind]
+  if (!spec?.coords || !spec.pathPatterns?.[0]) return null
+  const prefix = expandPattern(spec.pathPatterns[0], config)
+  const ext = spec.ext ?? "md"
+  const segs = spec.coords.split("/").map(s => (lang === "zh" ? COORD_LABELS_ZH[s] ?? s : s))
+  return `${prefix}${segs.join("/")}.${ext}`
 }
 
 /**

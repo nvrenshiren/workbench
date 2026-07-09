@@ -4,7 +4,7 @@
 
 ## 开发环境
 
-- **Node ≥ 22**
+- **Node ≥ 22**(从源码构建前端需 ≥ 22.12,vite 8 要求;仅跑发布包无此限制)
 - **pnpm**(仓库用 `packageManager` 锁定版本,建议 `corepack enable` 后自动取用)
 
 ```bash
