@@ -190,6 +190,42 @@ describe("多平台 init 端到端", () => {
   })
 })
 
+describe("platform adapter:hook 运行时契约(parseHookInput / respondBlocked / formatModel)", () => {
+  it("claude:tool_input.file_path;projectDirEnvVar;respondBlocked 走 stderr+exit2", () => {
+    const claude = getAdapter("claude")
+    assert.equal(claude.parseHookInput({ tool_input: { file_path: "a.ts" } }).filePath, "a.ts")
+    assert.equal(claude.projectDirEnvVar, "CLAUDE_PROJECT_DIR")
+    assert.deepEqual(claude.respondBlocked("msg"), { exitCode: 2, stderr: "msg" })
+    assert.equal(claude.formatModel("anthropic", "opus"), "opus")
+  })
+
+  it("codex:arguments.file_path;projectDirEnvVar;respondBlocked 走 stderr+exit2", () => {
+    const codex = getAdapter("codex")
+    assert.equal(codex.parseHookInput({ arguments: { file_path: "d.ts" } }).filePath, "d.ts")
+    assert.equal(codex.projectDirEnvVar, "CODEX_PROJECT_DIR")
+    assert.deepEqual(codex.respondBlocked("msg"), { exitCode: 2, stderr: "msg" })
+    assert.equal(codex.formatModel("anthropic", "gpt-5.1-codex"), "gpt-5.1-codex")
+  })
+
+  it("opencode:args.filePath;projectDirEnvVar;formatModel 拼 provider/model", () => {
+    const opencode = getAdapter("opencode")
+    assert.equal(opencode.parseHookInput({ args: { filePath: "c.ts" } }).filePath, "c.ts")
+    assert.equal(opencode.projectDirEnvVar, "OPENCODE_PROJECT_DIR")
+    assert.deepEqual(opencode.respondBlocked("msg"), { exitCode: 2, stderr: "msg" })
+    assert.equal(opencode.formatModel("anthropic", "claude-opus-4-8"), "anthropic/claude-opus-4-8")
+  })
+
+  it("cursor:file_path;projectDirEnvVar;respondBlocked 走 stdout JSON + exit0", () => {
+    const cursor = getAdapter("cursor")
+    assert.equal(cursor.parseHookInput({ file_path: "b.ts" }).filePath, "b.ts")
+    assert.equal(cursor.projectDirEnvVar, "CURSOR_PROJECT_DIR")
+    const resp = cursor.respondBlocked("msg")
+    assert.equal(resp.exitCode, 0)
+    assert.deepEqual(JSON.parse(resp.stdout!), { permission: "deny", userMessage: "msg", agentMessage: "msg" })
+    assert.equal(cursor.formatModel("anthropic", "opus"), "opus")
+  })
+})
+
 describe("resolvePlatforms 归一", () => {
   it("空/undefined → claude 兜底", () => {
     assert.deepEqual(resolvePlatforms(undefined).map(a => a.id), ["claude"])

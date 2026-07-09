@@ -21,6 +21,18 @@ export interface AgentSpec {
   body: string
 }
 
+/** hook stdin 提取结果 */
+export interface HookInputResult {
+  filePath?: string
+}
+
+/** 写门禁 enforce 拦截时的平台响应格式 */
+export interface BlockedResponse {
+  exitCode: number
+  stdout?: string
+  stderr?: string
+}
+
 /** 要注册的 MCP server(opcflow 自身) */
 export interface McpServer {
   name: string
@@ -60,6 +72,14 @@ export interface PlatformAdapter {
   writeHooks(root: string, wire: HookWire): string[]
   /** 该平台「跨会话记忆/经验」的落地方式(按平台真实约定,非一刀切) */
   memoryBlock(role: string, lang: "zh" | "en"): string
+  /** 该平台注入项目根路径的环境变量名(hook 运行时读取) */
+  projectDirEnvVar: string
+  /** 从该平台 hook 传入的 stdin JSON 中提取被操作文件路径 */
+  parseHookInput(raw: unknown): HookInputResult
+  /** 写门禁 enforce 拦截时,该平台期望的响应格式 */
+  respondBlocked(msg: string): BlockedResponse
+  /** 格式化模型 ID(如 OpenCode 需要 provider/model 形式,其余平台原样返回) */
+  formatModel(providerId: string, modelId: string): string
 }
 
 // ── 各平台记忆约定 ──
@@ -134,6 +154,12 @@ const claude: PlatformAdapter = {
   hooksScanDir: ".claude/hooks",
   defaultModel: "opus",
   memoryBlock: (role, lang) => claudeMemory(role, lang),
+  projectDirEnvVar: "CLAUDE_PROJECT_DIR",
+  parseHookInput: raw => ({
+    filePath: (raw as any)?.tool_input?.file_path ?? (raw as any)?.tool_input?.filePath
+  }),
+  respondBlocked: msg => ({ exitCode: 2, stderr: msg }),
+  formatModel: (_providerId, modelId) => modelId,
   notes: [],
   agentFile: role => `${role}.md`,
   renderAgent: spec =>
@@ -179,6 +205,12 @@ const codex: PlatformAdapter = {
   hooksScanDir: null,
   defaultModel: "gpt-5.1-codex",
   memoryBlock: (_role, lang) => agentsMdMemory("Codex", lang),
+  projectDirEnvVar: "CODEX_PROJECT_DIR",
+  parseHookInput: raw => ({
+    filePath: (raw as any)?.arguments?.file_path ?? (raw as any)?.arguments?.filePath
+  }),
+  respondBlocked: msg => ({ exitCode: 2, stderr: msg }),
+  formatModel: (_providerId, modelId) => modelId,
   notes: [
     "Codex:项目级 .codex/* 仅当项目被标记 trusted 才加载 —— 在 ~/.codex/config.toml 里为本项目设 trust_level=\"trusted\"",
     "Codex:skill 走 .agents/skills/(非 .codex/skills)"
@@ -221,6 +253,12 @@ const opencode: PlatformAdapter = {
   hooksScanDir: null,
   defaultModel: "anthropic/claude-opus-4-8",
   memoryBlock: (_role, lang) => agentsMdMemory("OpenCode", lang),
+  projectDirEnvVar: "OPENCODE_PROJECT_DIR",
+  parseHookInput: raw => ({
+    filePath: (raw as any)?.args?.file_path ?? (raw as any)?.args?.filePath
+  }),
+  respondBlocked: msg => ({ exitCode: 2, stderr: msg }),
+  formatModel: (providerId, modelId) => `${providerId}/${modelId}`,
   notes: [
     "OpenCode:模型串是 provider/model 格式(见 models.dev);API key 建议走环境变量或 {env:...}"
   ],
@@ -290,6 +328,15 @@ const cursor: PlatformAdapter = {
   hooksScanDir: null,
   defaultModel: "claude-opus-4-8",
   memoryBlock: (_role, lang) => cursorMemory(lang),
+  projectDirEnvVar: "CURSOR_PROJECT_DIR",
+  parseHookInput: raw => ({
+    filePath: (raw as any)?.file_path ?? (raw as any)?.filePath
+  }),
+  respondBlocked: msg => ({
+    exitCode: 0,
+    stdout: JSON.stringify({ permission: "deny", userMessage: msg, agentMessage: msg })
+  }),
+  formatModel: (_providerId, modelId) => modelId,
   notes: [
     "Cursor:主 agent 模型由 UI 选,--model 只作用于生成的 subagent(.cursor/agents/*.md)"
   ],
