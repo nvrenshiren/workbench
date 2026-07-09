@@ -148,7 +148,15 @@ export const MIGRATIONS: Migration[] = [
     }
   },
   // 迁移 3:claim 时记录 git HEAD,供 hotfix 契约触碰检测与 trailer 交叉验证
-  { version: 3, up: db => db.exec("ALTER TABLE tasks ADD COLUMN claim_commit TEXT") }
+  { version: 3, up: db => db.exec("ALTER TABLE tasks ADD COLUMN claim_commit TEXT") },
+  // 迁移 4:边来源(derived=scan 按 parents×坐标推导,对账维护;manual=用户手动声明,可解绑、scan 永不动)
+  {
+    version: 4,
+    up: db =>
+      db.exec(
+        "ALTER TABLE artifact_edges ADD COLUMN source TEXT NOT NULL DEFAULT 'derived' CHECK (source IN ('derived','manual'))"
+      )
+  }
 ]
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version

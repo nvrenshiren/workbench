@@ -63,6 +63,24 @@ describe("schema 等价测试:基线路径与全新路径必须收敛", () => {
     assert.equal(row.external_ref, null)
     db.close()
   })
+
+  it("迁移 4:artifact_edges 有 source 列,默认 derived,拒绝非法值", () => {
+    const db = new Database(join(dir, "edges.db"))
+    ensureSchema(db)
+    const cols = db.prepare("PRAGMA table_info(artifact_edges)").all() as { name: string; dflt_value: string | null }[]
+    const source = cols.find(c => c.name === "source")
+    assert.ok(source, "缺 source 列")
+    assert.match(String(source!.dflt_value), /derived/)
+
+    db.prepare("INSERT INTO artifacts (kind, path, content_hash) VALUES ('doc','a.md','h')").run()
+    db.prepare("INSERT INTO artifacts (kind, path, content_hash) VALUES ('doc','b.md','h')").run()
+    db.prepare("INSERT INTO artifact_edges (from_id, to_id) VALUES (1, 2)").run()
+    const row = db.prepare("SELECT source FROM artifact_edges WHERE from_id = 1").get() as { source: string }
+    assert.equal(row.source, "derived") // 未指定即 derived
+    db.prepare("INSERT INTO artifact_edges (from_id, to_id, source) VALUES (2, 1, 'manual')").run()
+    assert.throws(() => db.prepare("INSERT INTO artifact_edges (from_id, to_id, source) VALUES (1, 1, 'weird')").run())
+    db.close()
+  })
 })
 
 describe("CHECK 手术后的项目语义校验(commands 层)", () => {
