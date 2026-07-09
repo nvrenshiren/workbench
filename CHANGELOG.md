@@ -1,3 +1,17 @@
+# [0.10.0](https://github.com/nvrenshiren/opcflow/compare/v0.9.0...v0.10.0) (2026-07-09)
+
+
+### Bug Fixes
+
+* Sider 主题跟随明暗切换(原写死 light);viewer 随 SSE 事件自动重拉(不再显示旧内容) ([b28162f](https://github.com/nvrenshiren/opcflow/commit/b28162f60701e77941c8f2845891e6f0c8623a98))
+* 接线 RoleSpec.onQaFail(此前为死字段)——返工派发由 code 归属角色的注册表声明决定 ([8efb78f](https://github.com/nvrenshiren/opcflow/commit/8efb78f73de4e0a5848921801277ba20851be107))
+* 收口未领取任务的授权空洞;PM 免领取改为注册表能力 completeWithoutClaim ([e2ba198](https://github.com/nvrenshiren/opcflow/commit/e2ba1985eb8911609c68f608f6f8f891684efe0b))
+
+
+### Features
+
+* 可选写保护 config.server.authToken——写端点要求 x-workbench-token,读开放 ([4cfcb94](https://github.com/nvrenshiren/opcflow/commit/4cfcb941c6a4335732d50052b79e8325722fb32c))
+
 # [0.9.0](https://github.com/nvrenshiren/opcflow/compare/v0.8.0...v0.9.0) (2026-07-09)
 
 
