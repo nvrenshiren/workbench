@@ -43,6 +43,7 @@
 - **`language`** `"zh"|"en"`(默认 `zh`)—— 生成 agent 的语言 + 工作台 UI 语言。
 - **`model`** `string | Record<平台, model>` —— 各平台模型:字符串=全平台同款,对象=按平台指定,缺省用各 adapter 默认。
 - **`feedbackHalfLifeDays`** `number`(默认 `15`)—— 反馈权重半衰期天数;`retro`/distill 用,越旧的 👍👎 权重越低。
+- **`taskPreconditions`** `{role, type?, requiresSiblingRoleCompleted}[]`(默认 `[{role:"qa", type:"qa", requiresSiblingRoleCompleted:"developer"}]`)—— 任务级跨角色前置:该角色的任务领取前,要求**同坐标**的某角色任务已 completed。kind 的 parents 只能表达"产物审批状态"依赖,这类"任务完成状态"依赖在此声明。*例:让 designer 等 product-manager 任务完成:`{"role":"designer","requiresSiblingRoleCompleted":"product-manager"}`。*
 - **`candidateThreshold`** `number`(默认 `3`)—— 加权正分 ≥ 此值 → 经验候选(提示 AI 判断沉淀为 skill / 规则 / 记忆)。调低更爱提候选,调高更保守。
 - **`redFlagThreshold`** `number`(默认 `2`)—— 加权负分 ≥ 此值 → Red Flag。同理调节灵敏度。
 
