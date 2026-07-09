@@ -34,6 +34,7 @@ const DEFAULTS: WorkbenchConfig = {
   moduleMapping: {},
   feedbackHalfLifeDays: 15,
   gates: { approvalMode: "warn", writeGate: "observe" },
+  taskPreconditions: [{ role: "qa", type: "qa", requiresSiblingRoleCompleted: "developer" }],
   git: { taskTrailer: "off", trailerKey: "Task" },
   legacyDb: "tasks/task.db",
   dataDir: ".workbench",

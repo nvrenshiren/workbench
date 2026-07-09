@@ -136,6 +136,28 @@ function requirementSatisfied(ctx: Ctx, req: Requirement, matched: ArtifactRow[]
 }
 
 /**
+ * 任务级跨角色前置(config.taskPreconditions):kind 的 parents 只能表达"产物级"依赖,
+ * 这类"同坐标的某角色任务必须先完成"的依赖要单独声明,不走 claimRequirements。
+ */
+function siblingRoleBlocking(ctx: Ctx, task: TaskRow): string | null {
+  for (const rule of ctx.config.taskPreconditions ?? []) {
+    if (rule.role !== task.role) continue
+    if (rule.type && rule.type !== task.type) continue
+    const done = ctx.db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM tasks
+         WHERE role = ? AND status = 'completed' AND module IS ? AND endpoint IS ?
+           AND (? IS NULL OR page IS ?)`
+      )
+      .get(rule.requiresSiblingRoleCompleted, task.module, task.endpoint, task.page, task.page) as { c: number }
+    if (done.c === 0) {
+      return `对应的 ${rule.requiresSiblingRoleCompleted} ${task.endpoint ?? ""} 任务尚未完成,无法领取 ${task.role} 任务。`
+    }
+  }
+  return null
+}
+
+/**
  * claim 校验。exist 级缺失抛错阻断;approved 级不满足时,
  * approvalMode=warn 记 warning,enforce 抛错。
  * task_inputs 快照 = 匹配产物 ∪ baseline,按注册表 drivesStale 过滤。
@@ -145,19 +167,9 @@ export function validateClaim(ctx: Ctx, task: TaskRow): GateResult {
   const inputs = new Map<number, ArtifactRow>()
   const mode = ctx.config.gates.approvalMode
 
-  // qa 任务:要求对应 developer 任务已完成
-  if (task.role === "qa" && task.type === "qa") {
-    const dev = ctx.db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM tasks
-         WHERE role = 'developer' AND status = 'completed' AND module IS ? AND endpoint IS ?
-           AND (? IS NULL OR page IS ?)`
-      )
-      .get(task.module, task.endpoint, task.page, task.page) as { c: number }
-    if (dev.c === 0) {
-      throw new Error(`[前置条件] 对应的 developer ${task.endpoint} 任务尚未完成,无法领取 qa 任务。`)
-    }
-  }
+  // 任务级跨角色前置(config.taskPreconditions,缺省 = qa 要求同坐标 developer 已完成)
+  const blockMsg = siblingRoleBlocking(ctx, task)
+  if (blockMsg) throw new Error(`[前置条件] ${blockMsg}`)
 
   // 懒清算提示:触碰未清算模块 → 建议先对账(不硬阻断,清算成本按需支付)
   if (task.module && (task.type === "build" || task.type === "hotfix") && !moduleCleared(ctx.db, task.module)) {

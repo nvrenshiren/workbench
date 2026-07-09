@@ -111,6 +111,11 @@ export interface WorkbenchConfig {
   /** 提炼阈值(缺省 2):加权负分 ≥ 此值 → Red Flag */
   redFlagThreshold?: number
   gates: { approvalMode: "warn" | "enforce"; writeGate: "off" | "observe" | "enforce" }
+  /**
+   * 任务级跨角色前置:kind 的 parents 只能表达"产物审批状态"依赖,这类"同坐标的某角色
+   * 任务必须先 completed"的依赖要单独声明。缺省值见 core/config.ts 的 DEFAULTS。
+   */
+  taskPreconditions?: { role: Role; type?: TaskType; requiresSiblingRoleCompleted: Role }[]
   /** git 集成:trailer 交叉验证默认 off(裁决账本:用户过目后生效) */
   git: { taskTrailer: "off" | "on"; trailerKey: string }
   legacyDb: string
