@@ -1,4 +1,4 @@
-import { Button, Drawer, Empty, Input, List, Select, Space, Tag, Typography, message } from "antd"
+import { Button, Drawer, Empty, Select, Space, Tag, message } from "antd"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Background,
@@ -7,7 +7,8 @@ import {
   ReactFlow,
   type Connection,
   type Edge,
-  type Node
+  type Node,
+  type ReactFlowInstance
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import dagre from "@dagrejs/dagre"
@@ -86,9 +87,13 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
   const [raw, setRaw] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] }>({ nodes: [], edges: [] })
   const [moduleFilter, setModuleFilter] = useState<string | undefined>()
   const [q, setQ] = useState("")
-  const [files, setFiles] = useState<string[]>([])
+  const [results, setResults] = useState<{ artifacts: { id: number; kind: string; path: string }[]; files: string[] }>({
+    artifacts: [],
+    files: []
+  })
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+  const [rf, setRf] = useState<ReactFlowInstance | null>(null)
   const debounce = useRef<ReturnType<typeof setTimeout>>()
 
   const load = useCallback(() => {
@@ -114,14 +119,14 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
     }
   }, [open, load])
 
-  // 未登记文件搜索(去抖)
+  // 名字索引(去抖):已登记产物 + 未登记文件,喂给动态下拉
   useEffect(() => {
     clearTimeout(debounce.current)
     if (!q.trim()) {
-      setFiles([])
+      setResults({ artifacts: [], files: [] })
       return
     }
-    debounce.current = setTimeout(() => api.searchFiles(q).then(r => setFiles(r.files)), 300)
+    debounce.current = setTimeout(() => api.searchFiles(q).then(r => setResults({ artifacts: r.artifacts, files: r.files })), 300)
   }, [q])
 
   const filtered = useMemo(() => {
@@ -180,12 +185,34 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
         .registerFile(path)
         .then(() => {
           message.success(t(`已登记并加入图:${path}`, `Registered & added: ${path}`))
-          setFiles(f => f.filter(x => x !== path))
+          setResults(r => ({ ...r, files: r.files.filter(x => x !== path) }))
           load()
         })
         .catch(e => message.error(String((e as Error).message ?? e)))
     },
     [load]
+  )
+
+  /** 定位已登记节点:必要时先清掉挡住它的模块过滤,再 fitView 聚焦 */
+  const locate = useCallback(
+    (id: number) => {
+      const node = raw.nodes.find(n => n.id === id)
+      if (!node) return
+      if (moduleFilter && node.module !== moduleFilter && node.module !== null) setModuleFilter(undefined)
+      setSelectedNode(node)
+      setSelectedEdge(null)
+      setTimeout(() => rf?.fitView({ nodes: [{ id: String(id) }], padding: 0.5, duration: 400 }), 60)
+    },
+    [raw, moduleFilter, rf]
+  )
+
+  /** 下拉选中分发:a:<id>=定位已登记节点;f:<path>=登记并加入 */
+  const onPick = useCallback(
+    (value: string) => {
+      if (value.startsWith("a:")) locate(Number(value.slice(2)))
+      else if (value.startsWith("f:")) addFile(value.slice(2))
+    },
+    [locate, addFile]
   )
 
   return (
@@ -199,12 +226,36 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
           onChange={setModuleFilter}
           options={modules.map(m => ({ label: m, value: m }))}
         />
-        <Input.Search
+        <Select<string | null>
+          showSearch
           allowClear
-          placeholder={t("按名字索引(高亮已登记 / 列出未登记)", "Search by name")}
-          style={{ width: 340 }}
-          value={q}
-          onChange={e => setQ(e.target.value)}
+          value={null}
+          searchValue={q}
+          onSearch={setQ}
+          onClear={() => setQ("")}
+          onSelect={v => v && onPick(v)}
+          filterOption={false}
+          placeholder={t("按名字索引:选已登记项定位,选未登记文件登记并加入", "Search by name: pick registered to locate, unregistered to add")}
+          style={{ width: 420 }}
+          notFoundContent={q.trim() ? undefined : null}
+          options={[
+            ...(results.artifacts.length
+              ? [
+                  {
+                    label: t("已登记(定位)", "Registered (locate)"),
+                    options: results.artifacts.map(a => ({ label: `${a.path}  ·  ${a.kind}`, value: `a:${a.id}` }))
+                  }
+                ]
+              : []),
+            ...(results.files.length
+              ? [
+                  {
+                    label: t("未登记(登记并加入)", "Unregistered (register & add)"),
+                    options: results.files.map(f => ({ label: f, value: `f:${f}` }))
+                  }
+                ]
+              : [])
+          ]}
         />
         {selectedEdge && (selectedEdge.data as { source: string }).source === "manual" && (
           <Button danger size="small" onClick={unbind}>
@@ -220,34 +271,9 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
           </Button>
         )}
       </Space>
-      {files.length > 0 && (
-        <List
-          size="small"
-          style={{ marginBottom: 10, maxHeight: 140, overflow: "auto" }}
-          header={
-            <Typography.Text type="secondary">
-              {t("未登记文件(点击登记并加入图)", "Unregistered files (click to register & add)")}
-            </Typography.Text>
-          }
-          dataSource={files}
-          renderItem={p => (
-            <List.Item
-              style={{ cursor: "pointer", fontFamily: MONO, fontSize: 12 }}
-              onClick={() => addFile(p)}
-              actions={[
-                <Button key="add" size="small" type="link">
-                  {t("登记并加入", "Add")}
-                </Button>
-              ]}
-            >
-              {p}
-            </List.Item>
-          )}
-        />
-      )}
       <div
         style={{
-          height: "calc(100% - 110px)",
+          height: "calc(100% - 60px)",
           minHeight: 420,
           border: "1px solid rgba(128,128,128,0.25)",
           borderRadius: 10
@@ -259,6 +285,7 @@ export function RelationGraph({ open, onClose }: { open: boolean; onClose: () =>
           <ReactFlow
             nodes={flow.nodes}
             edges={flow.edges}
+            onInit={setRf}
             onConnect={onConnect}
             onEdgeClick={(_, edge) => {
               setSelectedEdge(edge)
