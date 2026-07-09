@@ -302,3 +302,35 @@ describe("原型预览单源:静态根与 previewUrl 由 kind 注册表推导(pa
     }
   })
 })
+
+describe("写保护 authToken:配置后写端点需 x-workbench-token,读端点保持开放", () => {
+  it("无 token 401 / 错 token 401 / 对 token 放行 / GET 不受影响", async () => {
+    const root = mkdtempSync(join(tmpdir(), "wb-auth-"))
+    writeFileSync(
+      join(root, "workbench.config.json"),
+      JSON.stringify({ gates: { approvalMode: "warn" }, server: { authToken: "s3cret" } })
+    )
+    const ctx = openWorkbenchAt(root)
+    ctxs.push(ctx)
+    mkdirSync(join(root, "docs/prd/modules"), { recursive: true })
+    writeFileSync(join(root, "docs/prd/modules/land.md"), "# land")
+    ctx.db
+      .prepare("INSERT INTO artifacts (kind, module, endpoint, path, content_hash) VALUES ('module-prd','land','common','docs/prd/modules/land.md','x')")
+      .run()
+
+    const app = await createServer(ctx)
+    try {
+      const noToken = await app.inject({ method: "POST", url: "/api/artifact/1/approve", payload: { actor: "user" } })
+      assert.equal(noToken.statusCode, 401)
+      const wrong = await app.inject({ method: "POST", url: "/api/artifact/1/approve", payload: { actor: "user" }, headers: { "x-workbench-token": "nope" } })
+      assert.equal(wrong.statusCode, 401)
+      const ok = await app.inject({ method: "POST", url: "/api/artifact/1/approve", payload: { actor: "user" }, headers: { "x-workbench-token": "s3cret" } })
+      assert.equal(ok.statusCode, 200)
+      // 读端点开放(观测不设卡)
+      const g = await app.inject({ method: "GET", url: "/api/graph" })
+      assert.equal(g.statusCode, 200)
+    } finally {
+      await app.close()
+    }
+  })
+})

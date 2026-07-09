@@ -1,6 +1,6 @@
 import { Badge, Button, Flex, Input, Layout, Segmented, Space, Switch, Tooltip, Tree, Typography, message } from "antd"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { api, getActor, setActor, type TreeNode, type WbEvent } from "./api"
+import { api, getActor, getToken, setActor, setToken, type TreeNode, type WbEvent } from "./api"
 import { NodePanel } from "./NodePanel"
 import { ReviewQueue } from "./ReviewQueue"
 import { RelationGraph } from "./RelationGraph"
@@ -79,6 +79,7 @@ export default function App() {
   const [skillOpen, setSkillOpen] = useState(false)
   const [graphOpen, setGraphOpen] = useState(false)
   const [actorName, setActorName] = useState(getActor())
+  const [tokenVal, setTokenVal] = useState(getToken())
   const refreshTimer = useRef<number | null>(null)
   const prevSkill = useRef(-1) // -1 = 首次加载,不弹提醒;之后仅在计数增长时提醒
 
@@ -203,6 +204,19 @@ export default function App() {
                 setActor(e.target.value)
               }}
               placeholder="user"
+            />
+          </Tooltip>
+          <Tooltip title={t("写口令:服务端 config.server.authToken 启用写保护时必填(与身份分离)", "Write token: required when config.server.authToken enables write protection")}>
+            <Input.Password
+              size="small"
+              style={{ width: 110 }}
+              value={tokenVal}
+              onChange={e => {
+                setTokenVal(e.target.value)
+                setToken(e.target.value)
+              }}
+              placeholder={t("口令", "token")}
+              visibilityToggle={false}
             />
           </Tooltip>
           <Button size="small" onClick={runSync}>

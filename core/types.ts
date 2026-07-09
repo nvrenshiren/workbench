@@ -135,6 +135,11 @@ export interface WorkbenchConfig {
   roles?: Record<string, Partial<import("./roles").RoleSpec>>
   /** issue intake 分诊(缺省:bug→developer hotfix,其余→product-manager 标准道) */
   intake?: { bugRole?: string; defaultRole?: string }
+  /**
+   * 工作台服务:authToken 配置后,所有写端点(POST/DELETE)要求 x-workbench-token 头——
+   * 「能不能写」与「是谁」(actor 自由申报身份)分开;serve 默认 0.0.0.0 时的最低写保护。
+   */
+  server?: { authToken?: string }
   /** 目标 vibecode 平台(生成 agent/MCP/hooks 落地);默认 ["claude"] */
   platforms: string[]
   /** 各平台模型:字符串(全平台同款)或 {platform: model};缺省用各 adapter 默认 */

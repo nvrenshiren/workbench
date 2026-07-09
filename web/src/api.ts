@@ -73,10 +73,33 @@ async function get<T>(url: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+/** 写口令(服务端 config.server.authToken 启用写保护时需要);与 actor 身份分离 */
+const TOKEN_KEY = "wb-token"
+export function getToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? ""
+  } catch {
+    return ""
+  }
+}
+export function setToken(v: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, v)
+  } catch {
+    /* 隐私模式静默降级 */
+  }
+}
+function writeHeaders(): Record<string, string> {
+  const h: Record<string, string> = { "content-type": "application/json" }
+  const t = getToken()
+  if (t) h["x-workbench-token"] = t
+  return h
+}
+
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: writeHeaders(),
     body: JSON.stringify(body)
   })
   const data = (await res.json()) as T & { error?: string }
@@ -180,7 +203,7 @@ export const api = {
   removeEdge: async (id: number) => {
     const res = await fetch(`/api/edge/${id}`, {
       method: "DELETE",
-      headers: { "content-type": "application/json" },
+      headers: writeHeaders(),
       body: JSON.stringify({ actor: getActor() })
     })
     if (!res.ok) {
@@ -192,7 +215,7 @@ export const api = {
   unregisterArtifact: async (id: number) => {
     const res = await fetch(`/api/artifact/${id}`, {
       method: "DELETE",
-      headers: { "content-type": "application/json" },
+      headers: writeHeaders(),
       body: JSON.stringify({ actor: getActor() })
     })
     if (!res.ok) {

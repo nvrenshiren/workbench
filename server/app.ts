@@ -47,6 +47,18 @@ export async function createServer(ctx: Ctx): Promise<FastifyInstance> {
   const app = Fastify({ logger: false })
   await app.register(fastifyCors, { origin: true })
 
+  // 写保护(config.server.authToken 配置后生效):写端点要求共享口令;读端点保持开放(观测不设卡)。
+  // 「人审不外包」不变式的 HTTP 侧兜底——serve 默认对局域网开放,没有它任何人都能以任意 actor 审批。
+  const authToken = ctx.config.server?.authToken
+  if (authToken) {
+    app.addHook("preHandler", async (req, reply) => {
+      if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return
+      if (req.headers["x-workbench-token"] !== authToken) {
+        return reply.code(401).send({ error: "缺少或错误的 x-workbench-token(该工作台已启用写保护)" })
+      }
+    })
+  }
+
   const webDist = join(WORKBENCH_DIR, "web/dist")
   if (existsSync(webDist)) {
     await app.register(fastifyStatic, { root: webDist })
