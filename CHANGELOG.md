@@ -1,3 +1,19 @@
+# [0.6.0](https://github.com/nvrenshiren/opcflow/compare/v0.5.0...v0.6.0) (2026-07-09)
+
+
+### Bug Fixes
+
+* plan 取消语义接上 tombstone——已删除页面 PRD 按磁盘存在性收敛,不再派发且可取消 ([a0aab75](https://github.com/nvrenshiren/opcflow/commit/a0aab751ec93cd7b9e1b7aef03d9a81a83a90b80))
+* rework 完成与复验 qa 派发并入同一事务,闭环不再有静默断裂窗口 ([37103c1](https://github.com/nvrenshiren/opcflow/commit/37103c187c58d5ed3a48f0e1b5c5aa3d49591405))
+* sync 派复审去重改按目标粒度——首轮 review 未关时新增下游不再被静默漏通知 ([5977829](https://github.com/nvrenshiren/opcflow/commit/597782982686f462f9908006cca8cfae7116ee89))
+* 协议 lint 门禁去外层角色白名单,role:qa/designer 等配置项不再被静默忽略 ([0e9c3c2](https://github.com/nvrenshiren/opcflow/commit/0e9c3c2ee15881be78be3a6b50ca5c4752e151bd))
+* 树 health 两处失真——端级失败事件端节点自查;gate 阻塞识别覆盖全部 [前置条件] ([8f5f6e4](https://github.com/nvrenshiren/opcflow/commit/8f5f6e4cea9203c0156ce3a0f2d82c4879733a85))
+
+
+### Features
+
+* 新增 config.taskPreconditions 表达任务级跨角色前置,替换 QA 硬编码分支 ([3fde522](https://github.com/nvrenshiren/opcflow/commit/3fde522635ba8956810a107ba3b1a9726ad98f8b))
+
 # [0.5.0](https://github.com/nvrenshiren/opcflow/compare/v0.4.0...v0.5.0) (2026-07-09)
 
 
