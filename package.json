@@ -1,6 +1,6 @@
 {
   "name": "@dawipong/opcflow",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Spec-anchored, drift-enforced execution layer for AI coding agents — artifact DAG, trust gates, multi-role pipeline; generates agents/MCP/hooks for Claude Code, Codex, OpenCode & Cursor.",
   "license": "MIT",
   "author": "Dawi",

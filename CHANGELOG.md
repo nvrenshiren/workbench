@@ -1,3 +1,10 @@
+# [0.8.0](https://github.com/nvrenshiren/opcflow/compare/v0.7.0...v0.8.0) (2026-07-09)
+
+
+### Features
+
+* 角色全面注册表化——config.roles 定义自定义角色(含项目级模板),Role 放开为 string ([a70ae96](https://github.com/nvrenshiren/opcflow/commit/a70ae96ae0f4e6047c2451f850b4f1d254bb33e5))
+
 # [0.7.0](https://github.com/nvrenshiren/opcflow/compare/v0.6.0...v0.7.0) (2026-07-09)
 
 
