@@ -258,8 +258,11 @@ export function validateComplete(
     )
   }
 
-  // developer:机器检查(config 开启时)
-  if (task.role === "developer" && task.endpoint && ctx.config.machineChecks.enabled) {
+  // 机器检查(config 开启时):按产出 kind 的审批通道推导,不再硬编码角色——
+  // 默认只有 developer 产出 code(approval:"machine"),行为不变;
+  // 若项目把某个 kind 的 approval 配成 machine 并分给别的角色产出,同样会过这关
+  const producesMachineKind = producedKinds(ctx, task).some(k => kindSpec(ctx.config, k).approval === "machine")
+  if (producesMachineKind && task.endpoint && ctx.config.machineChecks.enabled) {
     const cmds = ctx.config.machineChecks[task.endpoint]
     if (Array.isArray(cmds)) {
       for (const cmd of cmds) {

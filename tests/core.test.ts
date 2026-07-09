@@ -14,6 +14,7 @@ import {
   refreshArtifact,
   registerOutput,
   reviewStatus,
+  scanArtifacts,
   submitArtifact,
   taskStaleness,
   updateTask,
@@ -300,5 +301,57 @@ describe("事件流:写必留痕", () => {
     writeDoc(ctx, "docs/architecture/database/news.md", "# news DB")
     const { linkedTaskId } = registerOutput(ctx, { module: "news", role: "architect", endpoint: "common", filePath: "docs/architecture/database/news.md" })
     assert.equal(linkedTaskId, id)
+  })
+})
+
+describe("机器检查门禁:按产出 kind 的 approval==='machine' 推导,不再硬编码角色", () => {
+  it("默认配置:developer 产出 code(machine 审批)→ 触发机器检查", () => {
+    const root = mkdtempSync(join(tmpdir(), "wb-mc-"))
+    writeFileSync(
+      join(root, "workbench.config.json"),
+      JSON.stringify({ machineChecks: { enabled: true, service: ['node -e "process.exit(1)"'] } })
+    )
+    // developer service 任务的 claim gate 要求 db-doc 存在,setup 须补齐
+    mkdirSync(join(root, "docs/architecture/database"), { recursive: true })
+    writeFileSync(join(root, "docs/architecture/database/land.md"), "# land DB")
+    mkdirSync(join(root, "service/src/modules/land"), { recursive: true })
+    writeFileSync(join(root, "service/src/modules/land/x.ts"), "export {}")
+    const ctx = openWorkbenchAt(root)
+    ctx.config.codeRoots = { service: ["service/src/modules/{module}"] }
+    scanArtifacts(ctx)
+    const id = createTask(ctx, { module: "land", role: "developer", endpoint: "service", creator: "pm" })
+    claimTask(ctx, { id, assignee: "developer" })
+    assert.throws(
+      () => updateTask(ctx, { id, status: "completed", operator: "developer", force: true }),
+      /机器检查失败/
+    )
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("泛化:非 developer 角色若在 roleProduces 里改产出 code,同样触发机器检查", () => {
+    const root = mkdtempSync(join(tmpdir(), "wb-mc-gen-"))
+    writeFileSync(
+      join(root, "workbench.config.json"),
+      JSON.stringify({
+        machineChecks: { enabled: true, service: ['node -e "process.exit(1)"'] },
+        codeRoots: { service: ["service/src/modules/{module}"] },
+        roleProduces: { architect: ["code"] }
+      })
+    )
+    mkdirSync(join(root, "docs/prd/modules"), { recursive: true })
+    writeFileSync(join(root, "docs/prd/modules/land.md"), "# PRD")
+    mkdirSync(join(root, "service/src/modules/land"), { recursive: true })
+    writeFileSync(join(root, "service/src/modules/land/x.ts"), "export {}")
+    const ctx = openWorkbenchAt(root)
+    scanArtifacts(ctx) // 登记 module-prd(docs 树)与 code(codeRoots 目录级)
+    const id = createTask(ctx, { module: "land", role: "architect", endpoint: "service", creator: "pm" })
+    claimTask(ctx, { id, assignee: "architect" })
+    assert.throws(
+      () => updateTask(ctx, { id, status: "completed", operator: "architect", force: true }),
+      /机器检查失败/
+    )
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
   })
 })
