@@ -1,3 +1,4 @@
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons"
 import { Badge, Button, Flex, Input, Layout, Segmented, Space, Switch, Tooltip, Tree, Typography, message } from "antd"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, getActor, getToken, setActor, setToken, type TreeNode, type WbEvent } from "./api"
@@ -15,6 +16,12 @@ const HEALTH_COLOR: Record<string, string> = {
   blocked: "#722ed1",
   failed: "#f5222d"
 }
+
+const SIDER_MIN_WIDTH = 300
+const SIDER_MAX_WIDTH = 500
+const SIDER_DEFAULT_WIDTH = 312
+const SIDER_WIDTH_KEY = "wb-sider-width"
+const SIDER_COLLAPSED_KEY = "wb-sider-collapsed"
 
 interface AntNode {
   key: string
@@ -80,8 +87,48 @@ export default function App() {
   const [graphOpen, setGraphOpen] = useState(false)
   const [actorName, setActorName] = useState(getActor())
   const [tokenVal, setTokenVal] = useState(getToken())
+  const [siderWidth, setSiderWidth] = useState(() => {
+    const saved = Number(localStorage.getItem(SIDER_WIDTH_KEY))
+    return saved >= SIDER_MIN_WIDTH && saved <= SIDER_MAX_WIDTH ? saved : SIDER_DEFAULT_WIDTH
+  })
+  const [siderCollapsed, setSiderCollapsed] = useState(() => localStorage.getItem(SIDER_COLLAPSED_KEY) === "1")
+  const [siderResizing, setSiderResizing] = useState(false)
   const refreshTimer = useRef<number | null>(null)
   const prevSkill = useRef(-1) // -1 = 首次加载,不弹提醒;之后仅在计数增长时提醒
+
+  const toggleSider = () => {
+    setSiderCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem(SIDER_COLLAPSED_KEY, next ? "1" : "0")
+      return next
+    })
+  }
+
+  // 侧栏拖拽调宽:mousemove 期间只更新 state(实时跟手),宽度落盘延后到 mouseup 一次性写入
+  const handleSiderResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = siderWidth
+    setSiderResizing(true)
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const next = Math.min(SIDER_MAX_WIDTH, Math.max(SIDER_MIN_WIDTH, startWidth + moveEvent.clientX - startX))
+      setSiderWidth(next)
+    }
+    const onMouseUp = (upEvent: MouseEvent) => {
+      const next = Math.min(SIDER_MAX_WIDTH, Math.max(SIDER_MIN_WIDTH, startWidth + upEvent.clientX - startX))
+      localStorage.setItem(SIDER_WIDTH_KEY, String(next))
+      setSiderResizing(false)
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+      window.removeEventListener("mousemove", onMouseMove)
+      window.removeEventListener("mouseup", onMouseUp)
+    }
+    window.addEventListener("mousemove", onMouseMove)
+    window.addEventListener("mouseup", onMouseUp)
+  }
 
   const loadTree = useCallback(async (meta: boolean) => {
     setTree(await api.tree(meta))
@@ -148,6 +195,14 @@ export default function App() {
           borderBottom: `1px solid ${SURFACE.line}`
         }}
       >
+        <Tooltip title={siderCollapsed ? t("显示侧栏", "Show sidebar") : t("隐藏侧栏", "Hide sidebar")}>
+          <Button
+            type="text"
+            size="small"
+            icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={toggleSider}
+          />
+        </Tooltip>
         <svg width="22" height="22" viewBox="0 0 32 32" style={{ flexShrink: 0 }}>
           <rect width="32" height="32" rx="7" fill={SURFACE.canvas} />
           <path
@@ -239,9 +294,13 @@ export default function App() {
       </Layout.Header>
       <Layout style={{ flex: 1, minHeight: 0 }}>
         <Layout.Sider
-          width={312}
+          width={siderWidth}
+          collapsible
+          collapsed={siderCollapsed}
+          collapsedWidth={0}
+          trigger={null}
           theme={themeMode}
-          style={{ borderRight: `1px solid ${SURFACE.line}`, overflow: "auto", background: SURFACE.panel }}
+          style={{ overflow: "auto", background: SURFACE.panel, transition: siderResizing ? "none" : undefined }}
         >
           <div style={{ padding: "10px 12px 4px", fontSize: 11, letterSpacing: 1, color: "rgba(var(--wb-fg),0.35)" }}>
             {t("项目结构", "Project structure")}
@@ -254,6 +313,12 @@ export default function App() {
             blockNode
           />
         </Layout.Sider>
+        {!siderCollapsed && (
+          <div
+            className={`wb-sider-resizer${siderResizing ? " wb-sider-resizer-active" : ""}`}
+            onMouseDown={handleSiderResizeStart}
+          />
+        )}
         <Layout.Content style={{ overflow: "auto", background: SURFACE.canvas }}>
           <NodePanel node={selected} liveEvents={liveEvents} onOpenQueue={() => setQueueOpen(true)} queueCount={queueCount} />
         </Layout.Content>

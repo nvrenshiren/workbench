@@ -65,6 +65,24 @@ body {
   transition: background 0.18s ease;
 }
 
+/* ─── 侧栏拖拽调宽手柄 ─────────────────────────────────── */
+.wb-sider-resizer {
+  flex: 0 0 5px;
+  position: relative;
+  cursor: col-resize;
+}
+.wb-sider-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  background: var(--wb-line);
+  transition: background 0.15s ease;
+}
+.wb-sider-resizer:hover::after,
+.wb-sider-resizer.wb-sider-resizer-active::after {
+  background: var(--wb-accent);
+}
+
 /* ─── markdown 阅读排版(契约审阅的主战场)──────────────── */
 .wb-md {
   font-size: 14px;
