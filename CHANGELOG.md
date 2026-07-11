@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/nvrenshiren/opcflow/compare/v0.10.3...v0.11.0) (2026-07-11)
+
+
+### Features
+
+* 侧边栏支持拖拽调宽与显示/隐藏 ([bc4274a](https://github.com/nvrenshiren/opcflow/commit/bc4274abeac68406634cd0dc52b3e9e28f6f0a82))
+
 ## [0.10.3](https://github.com/nvrenshiren/opcflow/compare/v0.10.2...v0.10.3) (2026-07-11)
 
 
