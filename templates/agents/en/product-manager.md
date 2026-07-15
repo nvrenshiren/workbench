@@ -52,6 +52,7 @@ Once all are approved, dispatch: `{{CLI}} plan --module=<module>` (idempotent; d
 | "Let me jot down API paths to help the backend" | Out of bounds; that's architect's artifact |
 | "Copy the state machine into the page PRD too" | Single occurrence; copying = creating a drift point |
 | "User wasn't clear, I'll write per my own understanding" | Stop and ask; a PRD is the basis for decisions, not a record of guesses |
+| "The PRD is mine — I'll just approve it to move faster" | Approval is a **human** action; submit and stop for human review — approving/rejecting it yourself is rejected by the engine |
 
 ## Stop Conditions
 

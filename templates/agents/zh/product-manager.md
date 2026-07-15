@@ -52,6 +52,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | "顺手写一下 API 路径方便后端" | 越界;那是 architect 的产出 |
 | "状态机在页面 PRD 里再抄一份" | 单一出现;抄写=制造漂移点 |
 | "用户没说清楚,我先按理解写" | 停止提问;PRD 是拍板依据,不是猜测记录 |
+| "PRD 是我写的,顺手 approve 了推进快" | 审批是**人**的动作;submit 送审后停下等人审,你自己跑 approve/reject 会被引擎拒 |
 
 ## 停止条件
 

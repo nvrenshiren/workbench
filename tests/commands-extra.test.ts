@@ -7,6 +7,7 @@ import { after, describe, it } from "node:test"
 import {
   approveArtifact,
   disputeArtifact,
+  feedbackArtifact,
   graphModule,
   intakeIssues,
   listEvents,
@@ -186,5 +187,57 @@ describe("intake:非 GitHub 环境快速失败", () => {
     // 临时目录不是 git/GitHub 仓库;gh 未装时同样落这条错误分支
     assert.throws(() => intakeIssues(ctx), /gh CLI 不可用|intake 依赖 gh/)
     assert.equal((ctx.db.prepare("SELECT COUNT(*) c FROM tasks").get() as { c: number }).c, 0)
+  })
+})
+
+describe("人审不外包:审批人不能是流水线角色(agent 禁止自写自审)", () => {
+  const root = tmpRoot("wb-human-approval-")
+  writeFileSync(join(root, "workbench.config.json"), "{}")
+  const write = (rel: string, content: string) => {
+    mkdirSync(join(root, rel, ".."), { recursive: true })
+    writeFileSync(join(root, rel), content)
+  }
+  write("docs/prd/modules/land.md", "# land PRD")
+  write("docs/design/prototypes/admin/land/list.html", "<h1>list</h1>")
+  const ctx: Ctx = openWorkbenchAt(root)
+  const prd = registerOutput(ctx, { module: "land", role: "product-manager", endpoint: "common", filePath: "docs/prd/modules/land.md" })
+  const proto = registerOutput(ctx, { module: "land", role: "designer", endpoint: "admin", page: "land/list", filePath: "docs/design/prototypes/admin/land/list.html" })
+  const ROLES = ["product-manager", "architect", "designer", "developer", "qa"]
+  after(() => {
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("approve/reject 的 actor 是流水线角色 → 引擎拒绝(CLI/HTTP 同源门)", () => {
+    for (const role of ROLES) {
+      assert.throws(() => approveArtifact(ctx, { id: prd.artifactId }, role), /人审不外包|流水线角色/)
+      assert.throws(() => rejectArtifact(ctx, { id: prd.artifactId }, role, "理由"), /人审不外包|流水线角色/)
+    }
+    // 拦截发生在写库前:审批状态不被角色染指
+    assert.equal(reviewStatus(resolveArtifact(ctx, { id: prd.artifactId })), "draft")
+  })
+
+  it("actor 是真人标识 → 正常放行(回归)", () => {
+    assert.equal(reviewStatus(approveArtifact(ctx, { id: prd.artifactId }, "user")), "approved")
+  })
+
+  it("原型👍=放行:actor 是角色 → 拒绝,且不留半条 feedback", () => {
+    assert.throws(() => feedbackArtifact(ctx, { id: proto.artifactId }, { verdict: 1, actor: "designer" }), /人审不外包|流水线角色/)
+    const fb = ctx.db.prepare("SELECT COUNT(*) c FROM artifact_feedback WHERE artifact_id = ?").get(proto.artifactId) as { c: number }
+    assert.equal(fb.c, 0)
+    assert.notEqual(reviewStatus(resolveArtifact(ctx, { id: proto.artifactId })), "approved")
+  })
+
+  it("原型👍:actor 是真人 → 放行(回归 designer 原型👍 合一审批)", () => {
+    const { endorsed } = feedbackArtifact(ctx, { id: proto.artifactId }, { verdict: 1, actor: "user" })
+    assert.equal(endorsed, true)
+    assert.equal(reviewStatus(resolveArtifact(ctx, { id: proto.artifactId })), "approved")
+  })
+
+  it("非放行反馈不误伤:普通产物👍 / 原型👎 即便 actor 是角色也照记(它们不等价审批)", () => {
+    const r1 = feedbackArtifact(ctx, { id: prd.artifactId }, { verdict: 1, actor: "developer" })
+    assert.equal(r1.endorsed, false)
+    const r2 = feedbackArtifact(ctx, { id: proto.artifactId }, { verdict: -1, comment: "留白不够", actor: "qa" })
+    assert.ok(r2.feedbackId > 0)
   })
 })

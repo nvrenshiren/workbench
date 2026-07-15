@@ -48,6 +48,7 @@ For endpoints that already have prototypes or production pages, **reverse-engine
 | "Hardcoding color values in the prototype is faster" | Every visual token comes from the design system, otherwise the design system loses its legislative force |
 | "Write API paths / data structures in the prompt" | Out of bounds; the PRD and API docs are the data contract |
 | "Reuse another page's prototype and tweak it" | No thoughtless reuse; design each page purpose-built, but tokens must share one source |
+| "I'll just 👍 my own prototype to release it" | 👍 = release = human approval; register output and wait for the user's 👍 in opcflow — feedback +1 / approve yourself is rejected by the engine |
 
 {{CLI_GUIDE}}
 

@@ -9,7 +9,7 @@ Every command: `opcflow <command> [args]` (after a global install; or `npx -y @d
 - Global `--project=<path>` sets the project root; otherwise it searches upward from the cwd for `workbench.config.json`.
 - File-path arguments go after `--` (e.g. `submit --actor=pm -- docs/prd/modules/user.md`) so they aren't parsed as options.
 - `<id>` is a positional argument (e.g. `show 12`).
-- **Approval actions (approve/reject) are deliberately human-only**; the AI uses the MCP `wb_*` typed tools (same source & transaction as the CLI) and never sees an approval entry point.
+- **Approval actions (approve/reject) are deliberately human-only**; the AI uses the MCP `wb_*` typed tools (same source & transaction as the CLI) and never sees an approval entry point. Even if an agent bypasses to the CLI via shell, the engine rejects any pipeline role as the `--actor` for approval (approve/reject and "prototype 👍 release" alike) — the actor must be a human identity.
 
 ---
 
@@ -34,9 +34,9 @@ Every command: `opcflow <command> [args]` (after a global install; or `npx -y @d
 ## Trust (approval loop)
 
 - **`submit -- <path>`** `--actor` —— submit for review: mark current content pending. *When:* an agent submits a produced contract for human review.
-- **`approve -- <path>`** `--actor [--trivial=true]` —— approve: mint the current content hash as the approved anchor. `--trivial=true` for tweaks: re-bless downstream snapshots + close derived reviews (don't disturb downstream). *When:* **your action**; nod after reviewing the diff in the queue. Use `--trivial` for typo-level edits to avoid downstream rework.
-- **`reject -- <path>`** `--actor --reason` —— reject: clear the submitted state, fall back to draft, keep the reason. *When:* **your action**; the contract has a problem — say why in a line.
-- **`feedback -- <path>`** `--actor --verdict=+1|-1 [--comment --task]` —— 👍/👎 an artifact; for prototypes 👍 = feedback + approval in one (release), 👎 requires a comment. *When:* prototype review; day-to-day scoring of code/artifacts feeds the evolution mechanism (retro).
+- **`approve -- <path>`** `--actor [--trivial=true]` —— approve: mint the current content hash as the approved anchor. `--actor` must be a human identity — pipeline roles are rejected by the engine (human review is not outsourced). `--trivial=true` for tweaks: re-bless downstream snapshots + close derived reviews (don't disturb downstream). *When:* **your action**; nod after reviewing the diff in the queue. Use `--trivial` for typo-level edits to avoid downstream rework.
+- **`reject -- <path>`** `--actor --reason` —— reject: clear the submitted state, fall back to draft, keep the reason (`--actor` must be human, same as approve). *When:* **your action**; the contract has a problem — say why in a line.
+- **`feedback -- <path>`** `--actor --verdict=+1|-1 [--comment --task]` —— 👍/👎 an artifact; for prototypes 👍 = feedback + approval in one (release, so the actor must be human — roles are rejected), 👎 requires a comment. *When:* prototype review; day-to-day scoring of code/artifacts feeds the evolution mechanism (retro).
 - **`dispute -- <path>`** `--actor --reason` —— trace an objection to already-approved content and stop for your ruling. *When:* an agent consuming an upstream contract finds the contract itself is wrong — instead of deviating, it leaves evidence and halts.
 - **`queue`** —— review queue (pending + invalidated). *When:* your daily entry point: what's waiting for review, what needs re-review due to upstream change.
 - **`sync`** `[--actor]` —— reconcile: re-scan content → invalidation propagation → dispatch review down the DAG (deduped) → handle deletions (tombstones). *When:* align state after hand-editing files in bulk; runs on post-commit.

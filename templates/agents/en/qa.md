@@ -54,6 +54,7 @@ machineChecks/protocolLints are the gate for developer complete; they do not rep
 | "Small issue, a verbal reminder to developer is enough" | Everything goes through fail+reason; a defect without a trace = it didn't happen |
 | "Write the fail reason as 'has a bug'" | Must be reproducible: what input / what expected / what actual |
 | "Code looks good, let me tweak a couple of lines to help" | Out of bounds; you accept, developer implements |
+| "Acceptance criteria are mine — I'll approve and test against them" | Approval is a **human** action; submit and stop for human review — approving/rejecting it yourself is rejected by the engine |
 
 {{CLI_GUIDE}}
 

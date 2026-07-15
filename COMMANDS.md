@@ -9,7 +9,7 @@
 - 全局 `--project=<路径>` 指定项目根,缺省从当前目录向上找 `workbench.config.json`。
 - 文件路径参数放在 `--` 之后(如 `submit --actor=pm -- docs/prd/modules/user.md`),避免被当选项解析。
 - `<id>` 直接作位置参(如 `show 12`)。
-- **审批类动作(approve/reject)刻意只给人**;AI 侧走 MCP 的 `wb_*` typed tools(与 CLI 同源同事务),看不到审批入口。
+- **审批类动作(approve/reject)刻意只给人**;AI 侧走 MCP 的 `wb_*` typed tools(与 CLI 同源同事务),看不到审批入口。即便 agent 绕道 shell 直调 CLI,引擎也拒绝以流水线角色作 `--actor` 审批(approve/reject 及「原型👍 放行」同源),`--actor` 须真人标识。
 
 ---
 
@@ -34,9 +34,9 @@
 ## 信任(审批闭环)
 
 - **`submit -- <路径>`** `--actor` —— 送审:当前内容标为待审。*场景:* agent 产出契约后送人审。
-- **`approve -- <路径>`** `--actor [--trivial=true]` —— 批准:把当前内容 hash 铸成 approved 锚点。`--trivial=true` 微调:re-bless 下游快照 + 关闭派生 review(不惊动下游)。*场景:* **你的动作**;待审队列过目 diff 后点头。错别字级改动用 `--trivial` 免全下游返工。
-- **`reject -- <路径>`** `--actor --reason` —— 打回:清掉送审态、退回 draft、留原因。*场景:* **你的动作**;契约有问题,附一句为什么。
-- **`feedback -- <路径>`** `--actor --verdict=+1|-1 [--comment --task]` —— 给产物 👍/👎;对原型 👍 = 反馈+审批合一(放行),👎 必附 comment。*场景:* 原型评审;日常给代码/产物打分,喂给进化机制(retro)。
+- **`approve -- <路径>`** `--actor [--trivial=true]` —— 批准:把当前内容 hash 铸成 approved 锚点。`--actor` 须真人标识,流水线角色会被引擎拒绝(人审不外包)。`--trivial=true` 微调:re-bless 下游快照 + 关闭派生 review(不惊动下游)。*场景:* **你的动作**;待审队列过目 diff 后点头。错别字级改动用 `--trivial` 免全下游返工。
+- **`reject -- <路径>`** `--actor --reason` —— 打回:清掉送审态、退回 draft、留原因(`--actor` 须真人,同 approve)。*场景:* **你的动作**;契约有问题,附一句为什么。
+- **`feedback -- <路径>`** `--actor --verdict=+1|-1 [--comment --task]` —— 给产物 👍/👎;对原型 👍 = 反馈+审批合一(放行,故 `--actor` 须真人,角色会被拒),👎 必附 comment。*场景:* 原型评审;日常给代码/产物打分,喂给进化机制(retro)。
 - **`dispute -- <路径>`** `--actor --reason` —— 对已 approved 的内容留痕异议并停下,等你裁决。*场景:* agent 消费上游契约时发现它本身有问题——不擅自偏离,而是留证据、停工等人。
 - **`queue`** —— 待审队列(pending + invalidated)。*场景:* 你的日常入口:看什么等着审、什么因上游变动需复审。
 - **`sync`** `[--actor]` —— 对账:重扫内容 → 失效传播 → 沿 DAG 给下游派 review(去重)→ 处理删除(墓碑)。*场景:* 手工批量改文件后对齐状态;post-commit 自动跑。

@@ -93,6 +93,14 @@ export function getRoleRegistry(config: WorkbenchConfig): Record<string, RoleSpe
   return merged
 }
 
+/**
+ * actor 是否流水线角色(AI 执行者)。「人审不外包」判定:审批(approve/reject、原型👍 放行)
+ * 是人的动作,角色不得以自身身份自审自批;判据走注册表,项目自定义角色(config.roles)一并覆盖。
+ */
+export function isPipelineRole(config: WorkbenchConfig, actor: string): boolean {
+  return Object.prototype.hasOwnProperty.call(getRoleRegistry(config), actor)
+}
+
 /** kind → 产出它的角色(produces 反查;code 兜底 developer,兼容旧 ownerRole 语义) */
 export function ownerRoleOf(config: WorkbenchConfig, kind: ArtifactKind): string | null {
   for (const [role, spec] of Object.entries(getRoleRegistry(config))) {

@@ -57,6 +57,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | "这个枚举 developer 自己加一下更快" | 枚举只有你能动,乱源=多端漂移 |
 | "顺手在 API 文档写业务实现思路" | 越界;实现是 developer 的事 |
 | "基线没批,先按主流栈写着" | 停止;基线批准前没有"默认技术栈" |
+| "契约写完自己 approve,让 developer 早开工" | 审批是**人**的动作;submit 送审即停等人审,你自己跑 approve/reject 会被引擎拒 |
 
 {{CLI_GUIDE}}
 

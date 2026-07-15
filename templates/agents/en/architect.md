@@ -57,6 +57,7 @@ tech selection (language / framework / ORM / build), directory structure per end
 | "Let developer just add this enum, it's faster" | Only you may touch enums; ad-hoc sources = multi-endpoint drift |
 | "Let me jot the business implementation approach into the API docs" | Out of bounds; implementation is developer's job |
 | "Baseline isn't approved, I'll write with a mainstream stack for now" | Stop; there is no 'default tech stack' before the baseline is approved |
+| "Contract's done, I'll approve it so developer starts sooner" | Approval is a **human** action; submit and stop for human review — approving/rejecting it yourself is rejected by the engine |
 
 {{CLI_GUIDE}}
 

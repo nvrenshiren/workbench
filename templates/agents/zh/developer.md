@@ -47,6 +47,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - **禁止**自行设计 API / 偏离已 👍 原型的视觉 / 违反 approved 基线与该端设计系统的硬约束
 - 端专属编码约束(组件规范/平台限制等)的真相源是 **TECH.md + 该端设计系统 + protocolLints**,不在本 prompt 里;lint 违例 complete 会被拦
 - 契约有误 → dispute 留痕停止,不带病施工
+- **审批不是你的活**:approved 才实现,契约有疑走 dispute;禁止自己 approve/reject 任何产物(审批是人的动作,引擎会拒角色)
 
 ## 双车道与返工
 

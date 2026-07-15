@@ -48,6 +48,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 | "原型里写死色值更快" | 一切视觉 token 来自设计系统,否则设计系统失去立法效力 |
 | "在提示词里写 API 路径/数据结构" | 越界;PRD 与 API 文档才是数据契约 |
 | "复用别的页面原型改改" | 禁止无思考复用;每页针对性设计,但 token 必须同源 |
+| "原型我自己给个 👍 就放行" | 👍=放行=人的审批;output 后等用户在 opcflow 点 👍,你自己跑 feedback +1 / approve 会被引擎拒 |
 
 {{CLI_GUIDE}}
 

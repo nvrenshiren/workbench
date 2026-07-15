@@ -4,6 +4,7 @@ import { reviewStatus } from "../derive"
 import { logEvent } from "../events"
 import { hashPath } from "../hash"
 import { inferKind, kindSpec, normalizeModule } from "../kind"
+import { isPipelineRole } from "../roles"
 import type { ArtifactRow, Ctx, ReviewStatus } from "../types"
 
 export interface ArtifactRef {
@@ -218,8 +219,22 @@ export interface ApproveOptions {
   trivial?: boolean
 }
 
+/**
+ * 「人审不外包」硬门:审批是人的动作,流水线角色(AI)不得自审自批。
+ * 挡 agent 以自身角色跑 CLI approve/reject、或经 feedback 给原型自我 👍 放行;
+ * 约束下沉引擎最内层——CLI / HTTP / feedback 三条同源入口一处生效。
+ */
+function assertHumanApprover(ctx: Ctx, actor: string, action: string): void {
+  if (isPipelineRole(ctx.config, actor)) {
+    throw new Error(
+      `「人审不外包」:actor "${actor}" 是流水线角色,不能自行${action}。审批是人的动作——请由人在 CLI/工作台以真实身份操作。`
+    )
+  }
+}
+
 /** 审批通过:approved_hash 绑定"审批人刚看过的这一版"(先重算磁盘指纹);内容存档供 diff */
 export function approveArtifact(ctx: Ctx, ref: ArtifactRef, actor: string, opts: ApproveOptions = {}): ArtifactRow {
+  assertHumanApprover(ctx, actor, "审批(approve)")
   const row = refreshArtifact(ctx, ref, actor)
   const via = opts.via ?? "review"
   const tx = ctx.db.transaction(() => {
@@ -295,6 +310,7 @@ export function approvedContent(ctx: Ctx, artifactId: number): string | null {
 }
 
 export function rejectArtifact(ctx: Ctx, ref: ArtifactRef, actor: string, reason: string): ArtifactRow {
+  assertHumanApprover(ctx, actor, "打回(reject)")
   if (!reason || !reason.trim()) throw new Error("打回必须附原因")
   const row = resolveArtifact(ctx, ref)
   const tx = ctx.db.transaction(() => {
@@ -330,6 +346,8 @@ export function feedbackArtifact(ctx: Ctx, ref: ArtifactRef, p: FeedbackParams):
     throw new Error("负反馈必须附一句原因,否则无法沉淀为经验")
   }
   const row = refreshArtifact(ctx, ref, p.actor)
+  // 原型👍=放行=审批:与下方 endorse 分支同条件前置拦截,agent(角色)不得自我背书,且不落半条 feedback
+  if (row.kind === "prototype" && p.verdict === 1) assertHumanApprover(ctx, p.actor, "对原型 👍 放行")
 
   const tx = ctx.db.transaction(() => {
     const result = ctx.db
