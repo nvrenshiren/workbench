@@ -17,12 +17,14 @@ describe("角色注册表:合并语义与 requires 规则化", () => {
     rmSync(root, { recursive: true, force: true })
   })
 
-  it("默认注册表编码现行为:developer 非 service 要求 api-doc+设计稿,service 只要 db-doc", () => {
+  it("默认注册表编码现行为:developer 非 service 要求 api-doc;设计稿 service+common 均免(无 UI);service 只要 db-doc", () => {
     const reg = getRoleRegistry(ctx.config)
     const dev = reg.developer
     assert.deepEqual(dev.produces, ["code"])
     assert.equal(dev.requires!.filter(r => !r.when).length, 1) // db-doc 无条件
     assert.ok(dev.requires!.some(r => r.when?.endpointNot === "service" && r.kinds.includes("api-doc")))
+    const designReq = dev.requires!.find(r => r.kinds.includes("design-prompt"))
+    assert.deepEqual(designReq?.when?.endpointNotIn, ["service", "common"]) // common 纯计算包与 service 一同豁免
   })
 
   it("config.roleProduces 旧字段兼容:只覆盖 produces 维度", () => {
@@ -50,6 +52,39 @@ describe("角色注册表:合并语义与 requires 规则化", () => {
       () => createTask(ctx, { module: "land", role: "nonexistent-role" as never, endpoint: "common", creator: "pm" }),
       /无效的角色/
     )
+  })
+})
+
+describe("developer common 端豁免设计稿前置(纯计算共享包无 UI,回归 #99 死锁)", () => {
+  const root = mkdtempSync(join(tmpdir(), "wb-common-dev-"))
+  writeFileSync(join(root, "workbench.config.json"), "{}")
+  const write = (rel: string, content: string) => {
+    mkdirSync(join(root, rel, ".."), { recursive: true })
+    writeFileSync(join(root, rel), content)
+  }
+  write("docs/prd/modules/engine.md", "# engine PRD")
+  write("docs/architecture/database/engine.md", "# db")
+  write("docs/architecture/api/common/engine.md", "# api")
+  const ctx: Ctx = openWorkbenchAt(root)
+  registerOutput(ctx, { module: "engine", role: "product-manager", endpoint: "common", filePath: "docs/prd/modules/engine.md" })
+  registerOutput(ctx, { module: "engine", role: "architect", endpoint: "common", filePath: "docs/architecture/database/engine.md" })
+  registerOutput(ctx, { module: "engine", role: "architect", endpoint: "common", filePath: "docs/architecture/api/common/engine.md" })
+  after(() => {
+    ctx.db.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it("common 端 developer:db-doc+api-doc 齐备即可领取,不因缺 designer 设计稿被拦", () => {
+    const id = createTask(ctx, { module: "engine", role: "developer", endpoint: "common", creator: "pm" })
+    // 修复前:common ∉ endpointNot:"service" 豁免 → 要求 designer common 设计稿(结构性不存在)→ 死锁
+    assert.doesNotThrow(() => claimTask(ctx, { id, assignee: "developer" }))
+  })
+
+  it("豁免不外溢:同样缺设计稿,web 端 developer 仍被设计稿前置阻断", () => {
+    write("docs/architecture/api/web/engine.md", "# api web")
+    registerOutput(ctx, { module: "engine", role: "architect", endpoint: "web", filePath: "docs/architecture/api/web/engine.md" })
+    const id = createTask(ctx, { module: "engine", role: "developer", endpoint: "web", page: "engine/list", creator: "pm" })
+    assert.throws(() => claimTask(ctx, { id, assignee: "developer" }), /设计稿.*不存在/)
   })
 })
 

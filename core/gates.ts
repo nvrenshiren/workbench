@@ -82,6 +82,7 @@ function existRequirements(ctx: Ctx, task: TaskRow): Requirement[] {
   for (const r of spec?.requires ?? []) {
     if (r.when?.endpoint && task.endpoint !== r.when.endpoint) continue
     if (r.when?.endpointNot && task.endpoint === r.when.endpointNot) continue
+    if (r.when?.endpointNotIn && task.endpoint && r.when.endpointNotIn.includes(task.endpoint)) continue
     // 设计稿类要求按端过滤(旧行为:developer 前端任务查本端设计稿),其余按模块
     const filter: ArtifactFilter =
       r.kinds.includes("design-prompt") || r.kinds.includes("prototype")

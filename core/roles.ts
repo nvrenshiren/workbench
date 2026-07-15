@@ -10,8 +10,8 @@ import type { ArtifactKind, TaskType, WorkbenchConfig } from "./types"
 export interface RoleRequire {
   desc: string
   kinds: ArtifactKind[]
-  /** 封闭谓词:仅 endpoint 精确匹配 / 排除。不扩表达式——config 一旦图灵完备,声明式承诺即死 */
-  when?: { endpoint?: string; endpointNot?: string }
+  /** 封闭谓词:endpoint 精确匹配 / 单端排除 / 多端排除(endpointNotIn)。不扩表达式——config 一旦图灵完备,声明式承诺即死 */
+  when?: { endpoint?: string; endpointNot?: string; endpointNotIn?: string[] }
 }
 
 /** plan 派发规则:该角色在哪些坐标形态被物化为任务 */
@@ -65,7 +65,8 @@ export const DEFAULT_ROLE_REGISTRY: Record<string, RoleSpec> = {
     requires: [
       { desc: "数据库文档", kinds: ["db-doc"] },
       { desc: "API 文档", kinds: ["api-doc"], when: { endpointNot: "service" } },
-      { desc: "designer {endpoint} 设计稿", kinds: ["design-prompt", "prototype"], when: { endpointNot: "service" } }
+      // service 后端与 common 纯计算共享包均无 UI,designer 不产其设计稿 → 一并豁免设计稿前置
+      { desc: "designer {endpoint} 设计稿", kinds: ["design-prompt", "prototype"], when: { endpointNotIn: ["service", "common"] } }
     ],
     dispatch: [
       { at: "module", endpoint: "service", content: "实现 {module} 模块 service 端" },
